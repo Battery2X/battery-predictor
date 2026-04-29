@@ -23,7 +23,7 @@ def calculate_rsi(series, period=14):
     return 100 - (100 / (1 + (gain/loss)))
 
 try:
-    print("🚀 v10.0 켈리 기반 정밀 앙상블 모델 가동...")
+    print("🚀 v11.0 ATR 샹들리에 및 켈리 공식 통합 모델 가동...")
     start_date = '2024-01-01'
 
     # [1] 데이터 수집
@@ -49,17 +49,24 @@ try:
     df['LG_RSI'] = calculate_rsi(df['LG_Close'])
     df['POSCO_RSI'] = calculate_rsi(df['POSCO_Close'])
     df['Sector_Heat'] = (df['SDI_RSI'] + df['LG_RSI'] + df['POSCO_RSI']) / 3
-    df['LEV_Vol_5d'] = df['LEV_Return'].rolling(5).std()
-
-    # MACD 산출
+    
     exp1 = df['LEV_Close'].ewm(span=12, adjust=False).mean()
     exp2 = df['LEV_Close'].ewm(span=26, adjust=False).mean()
     df['MACD_Hist'] = (exp1 - exp2) - (exp1 - exp2).ewm(span=9, adjust=False).mean()
 
+    # 🚨 [신규] ATR (Average True Range) 계산 - 주가의 진짜 변동성
+    high_low = raw_data['TIGER 레버리지']['High'] - raw_data['TIGER 레버리지']['Low']
+    high_close = np.abs(raw_data['TIGER 레버리지']['High'] - raw_data['TIGER 레버리지']['Close'].shift())
+    low_close = np.abs(raw_data['TIGER 레버리지']['Low'] - raw_data['TIGER 레버리지']['Close'].shift())
+    true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+    df['ATR'] = true_range.rolling(14).mean()
+
     features = ['LEV_Return', 'SDI_RSI', 'Sector_Heat', 'LEV_RSI', 'VIX_Close', 'TSLA_Close', 'USD_KRW', 'MACD_Hist']
     latest = df[features].iloc[-1]
+    latest_atr = df['ATR'].iloc[-1]
+    current_price = df['LEV_Close'].iloc[-1]
 
-    # [3] ML 모델 학습 (앙상블)
+    # [3] ML 모델 학습
     df['Target'] = np.where(df['LEV_Return'].shift(-1) >= 0.005, 1, 0)
     df_c = df.dropna()
     X, y = df_c[features], df_c['Target']
@@ -76,59 +83,61 @@ try:
     probs = model.predict_proba(latest.values.reshape(1, -1))[0]
     up_prob, down_prob = probs[1] * 100, probs[0] * 100
 
-    # 🚨 [핵심 업데이트 1] 켈리 공식 기반 신뢰도 패널티
-    # 승률이 50% 미만이면 모델의 근자감(확신도)을 수학적으로 깎아내립니다.
-    adj_up_prob = up_prob * (accuracy / 0.5) if accuracy < 0.5 else up_prob
-    adj_down_prob = down_prob * (accuracy / 0.5) if accuracy < 0.5 else down_prob
-    trust_warning = "⚠️ 승률 저조로 배팅 신뢰도 하향 조정" if accuracy < 0.5 else "✅ 모델 신뢰도 양호"
+    # 🚨 [수정 1] 확률 보정 오류 해결 (100% 비율 유지하되 엣지 점수 별도 표기)
+    edge_score = accuracy - 0.5  # 0보다 크면 통계적 우위, 작으면 열위
 
-    # [4] 위험 점수 연속 계산 (계단식 오류 해결)
+    # 🚨 [수정 2] 위험 점수 '지수형(Exponential)' 폭발 로직 도입
     sell_risk_score = 0
-    if latest['LEV_RSI'] > 70: sell_risk_score += (latest['LEV_RSI'] - 70) * 2  # 70 넘는 1포인트당 2점씩 선형 증가
-    if latest['Sector_Heat'] > 70: sell_risk_score += (latest['Sector_Heat'] - 70) * 2
-    if latest['VIX_Close'] > 22: sell_risk_score += 20
+    if latest['LEV_RSI'] > 70: sell_risk_score += (latest['LEV_RSI'] - 70) ** 1.8  # 제곱에 가깝게 폭증
+    if latest['Sector_Heat'] > 70: sell_risk_score += (latest['Sector_Heat'] - 70) ** 1.5
     if latest['MACD_Hist'] < 0: sell_risk_score += 20
-    sell_risk_score = min(int(sell_risk_score), 100) # 최대 100점
+    sell_risk_score = min(int(sell_risk_score), 100) # 최대 100점 캡
 
-    # 🚨 [핵심 업데이트 2] 동적 비중 조절 (100% 매수 방지)
-    base_weight = max(0, 100 - sell_risk_score)
-    # 승률이 50% 미만일 경우 목표 비중을 강제로 최대 30%까지만 제한 (보수적 접근)
-    target_weight = min(base_weight, 30) if accuracy < 0.5 else base_weight
+    # 🚨 [수정 3] 트루 켈리 공식(True Kelly) 비중 조절
+    if accuracy < 0.5:
+        target_weight = 0  # 승률 50% 미만은 수학적으로 배팅 금지
+        kelly_msg = "⚠️ AI 승률 50% 미만 (통계적 우위 없음). 전량 현금화 권장."
+    else:
+        target_weight = max(0, 100 - sell_risk_score)
+        kelly_msg = f"✅ 통계적 우위 구간. 위험도({sell_risk_score}점)에 따른 비중 산출."
+    
     target_cash = 100 - target_weight
 
-    # 🚨 [핵심 업데이트 3] 다이나믹 스탑로스
+    # 🚨 [수정 4] 프로 트레이더의 ATR 샹들리에 스탑로스
+    # 최고점에서 실제 변동성(ATR)의 2배수만큼 빠지면 탈출
     recent_high = raw_data['TIGER 레버리지']['Close'].tail(5).max()
-    # 위험 점수가 높으면 스탑로스 폭을 타이트하게(1.0배), 낮으면 여유있게(2.0배)
-    vol_multiplier = 1.0 if sell_risk_score > 60 else 2.0
-    stop_loss = int(recent_high * (1 - (df_c['LEV_Return'].tail(5).std() * vol_multiplier)))
+    atr_multiplier = 1.5 if sell_risk_score > 60 else 2.5 # 과열 시 타이트하게(1.5배)
+    stop_loss = int(recent_high - (latest_atr * atr_multiplier))
 
     # [5] 리포트 생성
-    res_msg = "상승 우세 📈" if adj_up_prob > adj_down_prob else "조정/하락 우세 📉"
-    macd_msg = "강세 (상승 추세)" if latest['MACD_Hist'] > 0 else "약세 (꺾임/조정)"
+    res_msg = "상승 우세 📈" if up_prob > down_prob else "조정/하락 우세 📉"
     
     final_report = f"""
-🤖 [레버리지 정밀 분석 v10.0 최종]
+🤖 [레버리지 퀀트 통제소 v11.0]
 
-🎯 내일 방향성 예측 ({trust_warning})
+🎯 AI 방향성 예측 (원본 확률)
 * 메인 시나리오: {res_msg}
-* 보정 확신도: 상승 {adj_up_prob:.1f}% / 하락 {adj_down_prob:.1f}%
+* 예측 확률: 상승 {up_prob:.1f}% / 하락 {down_prob:.1f}%
 
-⚠️ 시장 위험 및 모멘텀 진단
-* 최종 위험 점수: {sell_risk_score} / 100점
+⚠️ 시장 과열 및 위험도 (지수형 산출)
+* 최종 위험 점수: {sell_risk_score} / 100점 (🔥 지수 반영)
 * 레버리지 RSI: {latest['LEV_RSI']:.1f}
 * 빅3 평균 RSI: {latest['Sector_Heat']:.1f}
-* MACD 모멘텀: {macd_msg}
 
-⚖️ AI 권장 비중 (동적 스케일링)
-* 레버리지: {target_weight}% / 현금: {target_cash}%
-👉 위험 점수와 모델 승률({accuracy*100:.1f}%)을 반영한 수학적 비중입니다.
+⚖️ 최종 권장 비중 (Kelly Criterion)
+* 2차전지 레버리지: {target_weight}%
+* 현금 (예수금): {target_cash}%
+👉 {kelly_msg}
 
-🛡️ 기계적 스탑로스 (다이나믹)
+🛡️ ATR 샹들리에 청산선 (Chandelier Exit)
 * 자동 매도 단가: {stop_loss:,}원
-👉 과열도에 따라 방어선이 타이트해졌습니다. 이탈 시 전량 매도.
+👉 주가의 실제 일일 변동성(ATR)을 반영한 가장 과학적인 방어선입니다.
+
+------------------------
+※ 앙상블 모델 승률: {accuracy*100:.1f}%
     """
     send_telegram_message(final_report)
-    print("✅ v10.0 리포트 전송 완료")
+    print("✅ v11.0 퀀트 리포트 전송 완료")
 
 except Exception as e:
     send_telegram_message(f"🚨 에러: {traceback.format_exc()[:300]}")
