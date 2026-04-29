@@ -1,9 +1,10 @@
-name: Run Battery Predictor
+name: Run Battery Predictor (Close-focused)
 
 on:
   schedule:
-    # KST 오전 08:40 (UTC 전날 23:40)
-    - cron: '40 23 * * *' 
+    # KST 오후 02:40 (UTC 오전 05:40)
+    # 장 마감 20분 전 분석하여 종가 매도 지침 하달
+    - cron: '40 05 * * *' 
   workflow_dispatch:
 
 jobs:
