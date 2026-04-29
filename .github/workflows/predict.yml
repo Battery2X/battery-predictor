@@ -2,8 +2,13 @@ name: Run Battery Predictor
 
 on:
   schedule:
-    - cron: '50 23 * * *' 
+    # KST 오전 08:40 (UTC 전날 23:40)
+    - cron: '40 23 * * *' 
   workflow_dispatch:
+
+jobs:
+  build:
+    # ... (기존 환경 설정 동일) ...
 
 jobs:
   build:
