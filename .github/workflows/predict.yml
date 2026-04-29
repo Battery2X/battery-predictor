@@ -1,22 +1,20 @@
-name: 2차전지 ETF 예측
-
-on:
-  schedule:
-    - cron: '50 23 * * 1-5'  # KST 08:50 월~금
-  workflow_dispatch:           # 수동 실행 버튼
-
-jobs:
-  predict:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: 라이브러리 설치
-        run: pip install finance-datareader yfinance scikit-learn lightgbm requests
-      - name: 예측 실행
-        run: python predict.py
+- name: 예측 실행
+        run: |
+          python predict.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        continue-on-error: true
+
+      - name: 에러 확인
+        run: |
+          python -c "
+import sys
+print('Python 버전:', sys.version)
+try:
+    import predict
+except Exception as e:
+    print('에러 발생:', e)
+    import traceback
+    traceback.print_exc()
+"
