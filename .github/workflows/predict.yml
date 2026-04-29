@@ -2,19 +2,15 @@ name: Run Battery Predictor
 
 on:
   schedule:
-    # KST 오전 08:40 (UTC 전날 23:40)
+    # KST 오전 08:40 (UTC 전날 23:40)에 자동 실행
     - cron: '40 23 * * *' 
-  workflow_dispatch:
-
-jobs:
-  build:
-    # ... (기존 환경 설정 동일) ...
+  workflow_dispatch: # 수동 실행 버튼 활성화
 
 jobs:
   build:
     runs-on: ubuntu-latest
     
-    # 이 옵션이 핵심입니다. 모든 액션을 강제로 Node.js 24 환경에서 돌립니다.
+    # Node.js 관련 경고를 방지하기 위한 환경 변수
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -34,6 +30,7 @@ jobs:
 
       - name: 예측 스크립트 실행
         env:
+          # GitHub Secrets에서 보안 값 호출
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
