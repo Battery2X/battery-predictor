@@ -1,20 +1,32 @@
-- name: 예측 실행
+name: Run Battery Predictor
+
+on:
+  schedule:
+    # KST 오전 8:50은 UTC 기준 전날 오후 11:50 입니다.
+    - cron: '50 23 * * *' 
+  workflow_dispatch: # 수동으로 버튼을 눌러 실행할 수 있게 해주는 유용한 옵션입니다.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 코드 불러오기
+        uses: actions/checkout@v3
+
+      - name: 파이썬 환경 설정
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' # 코랩과 유사한 안정적인 버전
+
+      - name: 필요 라이브러리 설치 (이 부분이 빠져서 3초 컷 났을 확률이 높습니다)
         run: |
-          python predict.py
+          python -m pip install --upgrade pip
+          pip install finance-datareader yfinance pandas numpy scikit-learn requests
+
+      - name: 예측 스크립트 실행 (디버깅 모드)
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        continue-on-error: true
-
-      - name: 에러 확인
-        run: |
-          python -c "
-import sys
-print('Python 버전:', sys.version)
-try:
-    import predict
-except Exception as e:
-    print('에러 발생:', e)
-    import traceback
-    traceback.print_exc()
-"
+          PYTHONUNBUFFERED: "1" # 파이썬 로그가 화면에 즉시 출력되도록 강제
+        continue-on-error: true # 에러가 나도 로그를 끝까지 보여줌
+        run: python predict.py
