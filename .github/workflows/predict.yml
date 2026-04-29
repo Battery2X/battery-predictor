@@ -9,6 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
+    # 이 옵션이 핵심입니다. 모든 액션을 강제로 Node.js 24 환경에서 돌립니다.
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
       - name: 저장소 코드 불러오기
         uses: actions/checkout@v4
@@ -17,7 +21,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          # 에러를 유발한 cache: 'pip' 줄을 삭제했습니다.
 
       - name: 필요 라이브러리 설치
         run: |
