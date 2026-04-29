@@ -21,22 +21,24 @@ def send_telegram_message(text):
     payload = {'chat_id': chat_id, 'text': text}
     requests.post(url, data=payload)
 
-# 2. RSI 계산 함수
+# 2. RSI 계산 함수 (수정: 증권사 HTS 표준 EMA 방식 적용)
 def calculate_rsi(series, period=14):
     delta = series.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-    rs = gain / loss
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+    avg_gain = gain.ewm(alpha=1/period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
+    rs = avg_gain / avg_loss
     return 100 - (100 / (1 + rs))
 
 # ==========================================
 # 메인 분석 로직
 # ==========================================
 try:
-    print("🚀 레버리지 자산 통제소 v7.0 가동 (티커: 412570)...")
+    print("🚀 레버리지 자산 통제소 v7.1 가동...")
     start_date = '2024-01-01'
 
-    # [1] 데이터 수집 (티커 수정 완료: 412570)
+    # [1] 데이터 수집
     lev_raw = fdr.DataReader('412570', start_date) 
     lev_close = lev_raw['Close'].rename('LEV_Close')
     lev_vol = lev_raw['Volume'].rename('LEV_Volume')
@@ -62,31 +64,45 @@ try:
     df['POSCO_RSI'] = calculate_rsi(df['POSCO_Close'], period=14)
     df['Sector_Heat'] = (df['SDI_RSI'] + df['LG_RSI'] + df['POSCO_RSI']) / 3
 
-    # [3] AI 예측 모델
+    features = ['LEV_Return', 'SDI_RSI', 'LG_RSI', 'POSCO_RSI', 'Sector_Heat', 'LEV_RSI', 'VIX_Close']
+
+    # 🚨 수정: 오늘 데이터(latest_features)를 결측치 삭제 전에 미리 추출!
+    latest_features = df[features].iloc[-1]
+    recent_high = df['LEV_Close'].tail(5).max()
+    latest_vol = df['LEV_Vol_5d'].iloc[-1]
+
+    # [3] AI 예측 모델 타겟 생성 및 학습 데이터 정제
     TARGET_THRESHOLD = 0.005 
     df['Target_Next_Day'] = np.where(df['LEV_Return'].shift(-1) >= TARGET_THRESHOLD, 1, 0)
-    features = ['LEV_Return', 'SDI_RSI', 'LG_RSI', 'POSCO_RSI', 'Sector_Heat', 'LEV_RSI', 'VIX_Close']
-    df_clean = df.dropna()
+    
+    # 여기서 dropna를 하면 '오늘' 데이터가 지워지지만, 이미 위에서 안전하게 저장해둠.
+    df_clean = df.dropna() 
     X = df_clean[features]
     y = df_clean['Target_Next_Day']
 
+    # 모델 학습 및 승률(Accuracy) 계산 복구
     split = int(len(df_clean) * 0.8)
+    X_train, X_test = X.iloc[:split], X.iloc[split:]
+    y_train, y_test = y.iloc[:split], y.iloc[split:]
+
     model = RandomForestClassifier(n_estimators=300, random_state=42, max_depth=5, class_weight='balanced')
-    model.fit(X.iloc[:split], y.iloc[:split])
+    model.fit(X_train, y_train)
     
-    latest = df_clean.iloc[-1]
-    prediction = model.predict(latest[features].values.reshape(1, -1))
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred) # 승률 계산 복구 완료
     
-    # [4] 매도 위험 점수 (Risk Score)
+    # 미리 빼둔 '진짜 오늘 데이터'로 내일을 예측
+    prediction = model.predict(latest_features.values.reshape(1, -1))
+    
+    # [4] 매도 위험 점수 계산 (진짜 오늘 데이터 기준)
     sell_risk_score = 0
-    if latest['LEV_RSI'] > 75: sell_risk_score += 40
-    if latest['Sector_Heat'] > 70: sell_risk_score += 20
-    if latest['LEV_Vol_5d'] > df_clean['LEV_Vol_5d'].tail(20).mean() * 1.3: sell_risk_score += 20
-    if latest['VIX_Close'] > 22: sell_risk_score += 20
+    if latest_features['LEV_RSI'] > 75: sell_risk_score += 40
+    if latest_features['Sector_Heat'] > 70: sell_risk_score += 20
+    if latest_vol > df_clean['LEV_Vol_5d'].tail(20).mean() * 1.3: sell_risk_score += 20
+    if latest_features['VIX_Close'] > 22: sell_risk_score += 20
 
     # [5] 자산 배분 및 탈출선 계산
-    recent_high = df_clean['LEV_Close'].tail(5).max()
-    vol_drop_rate = latest['LEV_Vol_5d'] * 1.5
+    vol_drop_rate = latest_vol * 1.5
     stop_loss_price = int(recent_high * (1 - vol_drop_rate))
     
     target_stock_weight = max(0, 100 - sell_risk_score)
@@ -96,8 +112,13 @@ try:
 
     result_msg = "상승 돌파 📈" if prediction[0] == 1 else "하락/조정 경보 📉"
     
+    action_guide = ""
+    if sell_risk_score >= 80: action_guide = "🚨 [전량 매도] 시장이 광기에 달했습니다. 즉시 현금화하세요."
+    elif sell_risk_score >= 60: action_guide = "⚠️ [비중 축소] 초과열 상태입니다. 목표 비중에 맞춰 절반 이상 매도하세요."
+    else: action_guide = "✅ [추세 홀딩] 제시된 익절가(스탑로스)만 걸어두고 상승을 즐기세요."
+
     final_message = f"""
-🤖 [레버리지 자산 통제소 v7.0]
+🤖 [레버리지 자산 통제소 v7.1]
 
 📊 위험 점수: {sell_risk_score}점 / 100
 ({result_msg})
@@ -105,19 +126,23 @@ try:
 ⚖️ [AI 권장 포트폴리오 비중]
 * 2차전지 레버리지: {target_stock_weight}% 
 * 원화 예금(현금): {target_cash_weight}%
+👉 {action_guide}
 
 🛡️ [기계적 탈출선 (트레일링 스톱)]
 * 자동 매도 단가: {stop_loss_price:,}원
 👉 주가가 이 가격 이하로 떨어지면 미련 없이 전량 매도하세요.
 
 ------------------------
-* 레버리지 RSI: {latest['LEV_RSI']:.1f}
-* 섹터 전체 과열도: {latest['Sector_Heat']:.1f}
+* 레버리지 RSI: {latest_features['LEV_RSI']:.1f}
+* 섹터 전체 과열도: {latest_features['Sector_Heat']:.1f}
+* AI 예측 승률: {accuracy * 100:.2f}%
 ------------------------
-※ 종목코드 412570 분석 완료
+※ 종목코드 412570 / EMA 기준 분석 완료
     """
     send_telegram_message(final_message)
-    print("✅ 완료")
+    print("✅ 자산 통제 리포트 전송 완료!")
 
 except Exception as e:
-    send_telegram_message(f"🚨 에러 발생:\n{traceback.format_exc()[:500]}")
+    error_msg = traceback.format_exc()
+    print(error_msg)
+    send_telegram_message(f"🚨 [시스템 에러]\n\n{error_msg[:1000]}")
