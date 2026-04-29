@@ -2,15 +2,13 @@ name: Run Battery Predictor
 
 on:
   schedule:
-    # KST 오전 08:40 (UTC 전날 23:40)에 자동 실행
+    # KST 오전 08:40 (UTC 전날 23:40)
     - cron: '40 23 * * *' 
-  workflow_dispatch: # 수동 실행 버튼 활성화
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    # Node.js 관련 경고를 방지하기 위한 환경 변수
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -28,9 +26,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install finance-datareader yfinance pandas numpy scikit-learn requests
 
-      - name: 예측 스크립트 실행
+      - name: 예측 및 자산 통제 실행
         env:
-          # GitHub Secrets에서 보안 값 호출
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
