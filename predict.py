@@ -29,7 +29,7 @@ def calculate_rsi(series, period=14):
 
 
 try:
-    print("🚀 v14.1 하이브리드 추세-앙상블 모델 가동...")
+    print("🚀 v14.2 하이브리드 추세-앙상블 모델 가동...")
 
     # ==========================================
     # [1] 데이터 수집 (2022년부터 — 하락장 사이클 포함)
@@ -45,8 +45,10 @@ try:
     raw_data = {name: fdr.DataReader(t, start_date) for name, t in tickers.items()}
 
     usdkrw = fdr.DataReader('USD/KRW', start_date)['Close'].rename('USD_KRW')
+
+    # TSLA: 미국장은 한국장보다 늦게 끝나므로 전날 종가를 당겨서 사용 (shift 정상)
     tsla = yf.download('TSLA', start=start_date, progress=False)['Close'].squeeze().shift(1).rename('TSLA_Close')
-    vix = yf.download('^VIX', start=start_date, progress=False)['Close'].squeeze().shift(1).rename('VIX_Close')
+    vix  = yf.download('^VIX', start=start_date, progress=False)['Close'].squeeze().shift(1).rename('VIX_Close')
 
     df = pd.concat([
         raw_data['TIGER 레버리지']['Close'].rename('LEV_Close'),
@@ -60,15 +62,15 @@ try:
     # ==========================================
     # [2] 피처 엔지니어링
     # ==========================================
-    df['LEV_Return'] = df['LEV_Close'].pct_change()
-    df['TSLA_Return'] = df['TSLA_Close'].pct_change()
+    df['LEV_Return']     = df['LEV_Close'].pct_change()
+    df['TSLA_Return']    = df['TSLA_Close'].pct_change()
     df['USD_KRW_Return'] = df['USD_KRW'].pct_change()
 
     # RSI (임계값 68 — 과민반응 방지)
-    df['LEV_RSI'] = calculate_rsi(df['LEV_Close'])
+    df['LEV_RSI']     = calculate_rsi(df['LEV_Close'])
     df['Sector_Heat'] = (
         calculate_rsi(df['SDI_Close']) +
-        calculate_rsi(df['LG_Close']) +
+        calculate_rsi(df['LG_Close'])  +
         calculate_rsi(df['POSCO_Close'])
     ) / 3
 
@@ -76,23 +78,23 @@ try:
     df['Volume_Ratio'] = df['LEV_Volume'] / df['LEV_Volume'].rolling(20).mean()
 
     # 20일 EMA 추세
-    df['EMA_20'] = df['LEV_Close'].ewm(span=20, adjust=False).mean()
+    df['EMA_20']        = df['LEV_Close'].ewm(span=20, adjust=False).mean()
     df['Price_to_EMA20'] = (df['LEV_Close'] / df['EMA_20']) - 1
 
     # MACD 히스토그램
-    exp1 = df['LEV_Close'].ewm(span=12, adjust=False).mean()
-    exp2 = df['LEV_Close'].ewm(span=26, adjust=False).mean()
-    macd_line = exp1 - exp2
-    signal_line = macd_line.ewm(span=9, adjust=False).mean()
+    exp1         = df['LEV_Close'].ewm(span=12, adjust=False).mean()
+    exp2         = df['LEV_Close'].ewm(span=26, adjust=False).mean()
+    macd_line    = exp1 - exp2
+    signal_line  = macd_line.ewm(span=9, adjust=False).mean()
     df['MACD_Hist'] = macd_line - signal_line
 
     # ATR 계산
-    lev_high = raw_data['TIGER 레버리지']['High']
-    lev_low = raw_data['TIGER 레버리지']['Low']
+    lev_high  = raw_data['TIGER 레버리지']['High']
+    lev_low   = raw_data['TIGER 레버리지']['Low']
     lev_close = raw_data['TIGER 레버리지']['Close']
-    high_low = lev_high - lev_low
+    high_low   = lev_high - lev_low
     high_close = np.abs(lev_high - lev_close.shift())
-    low_close = np.abs(lev_low - lev_close.shift())
+    low_close  = np.abs(lev_low  - lev_close.shift())
     df['ATR'] = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1).rolling(14).mean()
 
     # ==========================================
@@ -124,17 +126,17 @@ try:
 
     model.fit(X.iloc[:split], y.iloc[:split])
 
-    accuracy = accuracy_score(y.iloc[split:], model.predict(X.iloc[split:]))
-    latest = df_clean[features].iloc[-1]
-    probs = model.predict_proba(latest.values.reshape(1, -1))[0]
+    accuracy          = accuracy_score(y.iloc[split:], model.predict(X.iloc[split:]))
+    latest            = df_clean[features].iloc[-1]
+    probs             = model.predict_proba(latest.values.reshape(1, -1))[0]
     up_prob, down_prob = probs[1] * 100, probs[0] * 100
 
-    latest_atr = df_clean['ATR'].iloc[-1]
+    latest_atr    = df_clean['ATR'].iloc[-1]
     current_price = df_clean['LEV_Close'].iloc[-1]
-    is_uptrend = current_price > df_clean['EMA_20'].iloc[-1]
+    is_uptrend    = current_price > df_clean['EMA_20'].iloc[-1]
 
     # ==========================================
-    # [4] 위험 점수 (RSI 임계값 68 — 과민반응 방지)
+    # [4] 위험 점수 (RSI 임계값 68)
     # ==========================================
     sell_risk_score = 0
 
@@ -159,18 +161,17 @@ try:
     if accuracy < 0.5:
         if is_uptrend:
             target_weight = min(base_weight, 20)
-            strategy_msg = "⚠️ AI 승률 저조. 대세 상승장이므로 최소 20% 유지."
+            strategy_msg  = "⚠️ AI 승률 저조. 대세 상승장이므로 최소 20% 유지."
         else:
             target_weight = 0
-            strategy_msg = "🚨 하락 추세 + AI 승률 저조. 전량 현금화."
+            strategy_msg  = "🚨 하락 추세 + AI 승률 저조. 전량 현금화."
     else:
         # ML 예측 확률로 비중 ±30% 조정
-        # up_prob=20% → -18%, up_prob=80% → +18%
-        prob_factor = (up_prob - 50) / 50
+        prob_factor     = (up_prob - 50) / 50
         prob_adjustment = prob_factor * 30
-        target_weight = int(max(0, min(100, base_weight + prob_adjustment)))
+        target_weight   = int(max(0, min(100, base_weight + prob_adjustment)))
 
-        direction = "상승" if up_prob >= 50 else "하락"
+        direction    = "상승" if up_prob >= 50 else "하락"
         strategy_msg = (
             f"✅ 엣지 확보. 기본비중 {base_weight}%에서 "
             f"AI {direction}신호({up_prob:.0f}%)로 {prob_adjustment:+.0f}% 조정 → {target_weight}%"
@@ -179,21 +180,21 @@ try:
     target_cash = 100 - target_weight
 
     # ==========================================
-    # [6] ATR 스탑로스
+    # [6] ATR 스탑로스 (df_clean 기준 통일 — 버그 수정)
     # ==========================================
     atr_multiplier = max(1.0, 3.0 - (sell_risk_score / 40))
-    recent_high = raw_data['TIGER 레버리지']['Close'].tail(5).max()
-    stop_loss = int(recent_high - (latest_atr * atr_multiplier))
-    stop_loss = max(stop_loss, int(recent_high * 0.90))  # 최대 -10% 하드캡
+    recent_high    = df_clean['LEV_Close'].tail(5).max()  # raw_data → df_clean 통일
+    stop_loss      = int(recent_high - (latest_atr * atr_multiplier))
+    stop_loss      = max(stop_loss, int(recent_high * 0.90))  # 최대 -10% 하드캡
 
     # ==========================================
     # [7] 리포트 출력
     # ==========================================
-    res_msg = "상승 돌파 📈" if up_prob > down_prob else "조정/하락 경보 📉"
+    res_msg   = "상승 돌파 📈" if up_prob > down_prob else "조정/하락 경보 📉"
     trend_msg = "🟢 대세 상승장 (주가 > 20일선)" if is_uptrend else "🔴 하락/역배열 (주가 < 20일선)"
 
     final_report = f"""
-🤖 [레버리지 하이브리드 통제소 v14.1]
+🤖 [레버리지 하이브리드 통제소 v14.2]
 
 📊 시장 분석
 * 매크로 추세: {trend_msg}
@@ -219,7 +220,7 @@ try:
 
     print(final_report)
     send_telegram_message(final_report)
-    print("\n✅ v14.1 리포트 전송 완료")
+    print("\n✅ v14.2 리포트 전송 완료")
 
 except Exception as e:
     error_msg = f"🚨 에러 발생:\n{traceback.format_exc()[:500]}"
