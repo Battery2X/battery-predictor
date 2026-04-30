@@ -10,7 +10,6 @@ from sklearn.metrics import accuracy_score
 import warnings
 warnings.filterwarnings('ignore')
 
-
 def send_telegram_message(text):
     token = os.environ.get("TELEGRAM_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -20,16 +19,14 @@ def send_telegram_message(text):
             data={'chat_id': chat_id, 'text': text}
         )
 
-
 def calculate_rsi(series, period=14):
     delta = series.diff()
     gain = delta.where(delta > 0, 0).ewm(alpha=1 / period, adjust=False).mean()
     loss = -delta.where(delta < 0, 0).ewm(alpha=1 / period, adjust=False).mean()
     return 100 - (100 / (1 + (gain / loss)))
 
-
 try:
-    print("🚀 v15.2 방향성 집중 모델 가동...")
+    print("🚀 v15.3 방향성 집중 완전체 모델 가동...")
 
     # ==========================================
     # [1] 데이터 수집 (2022년부터 — 하락장 사이클 포함)
@@ -46,14 +43,15 @@ try:
 
     usdkrw = fdr.DataReader('USD/KRW', start_date)['Close'].rename('USD_KRW')
 
-    # 타임존 제거 후 shift(1) — 한국장 기준 전날 미국 데이터 정확히 매핑
+    # 🚨 [핵심 수정 완료] 타임존 제거 및 shift 삭제 
+    # concat() 후 ffill()을 통해 한국장 시간에 맞춰 어젯밤 미국 데이터가 완벽히 매핑됩니다.
     tsla_raw = yf.download('TSLA', start=start_date, progress=False)['Close'].squeeze()
     tsla_raw.index = tsla_raw.index.tz_localize(None)
-    tsla = tsla_raw.shift(1).rename('TSLA_Close')
+    tsla = tsla_raw.rename('TSLA_Close')
 
     vix_raw = yf.download('^VIX', start=start_date, progress=False)['Close'].squeeze()
     vix_raw.index = vix_raw.index.tz_localize(None)
-    vix = vix_raw.shift(1).rename('VIX_Close')
+    vix = vix_raw.rename('VIX_Close')
 
     df = pd.concat([
         raw_data['TIGER 레버리지']['Close'].rename('LEV_Close'),
@@ -66,7 +64,7 @@ try:
     # ==========================================
     # [2] 피처 엔지니어링 (방향 예측 핵심 7개)
     # ==========================================
-
+    
     # 환율 변화 (외국인 수급 proxy)
     df['USD_KRW_Return'] = df['USD_KRW'].pct_change()
 
@@ -184,7 +182,7 @@ try:
     trend_msg = "🟢 20일선 위 (상승 추세)" if is_uptrend else "🔴 20일선 아래 (하락 추세)"
 
     final_report = f"""
-🤖 [레버리지 방향성 통제소 v15.2]
+🤖 [레버리지 방향성 통제소 v15.3 Final]
 
 📊 내일 방향 예측
 * {direction}
@@ -207,7 +205,7 @@ try:
 
     print(final_report)
     send_telegram_message(final_report)
-    print("\n✅ v15.2 리포트 전송 완료")
+    print("\n✅ v15.3 리포트 전송 완료")
 
 except Exception as e:
     error_msg = f"🚨 에러 발생:\n{traceback.format_exc()[:500]}"
