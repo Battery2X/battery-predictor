@@ -29,7 +29,7 @@ def calculate_rsi(series, period=14):
 
 
 try:
-    print("🚀 v14.0 하이브리드 추세-앙상블 모델 가동...")
+    print("🚀 v14.1 하이브리드 추세-앙상블 모델 가동...")
 
     # ==========================================
     # [1] 데이터 수집 (2022년부터 — 하락장 사이클 포함)
@@ -64,7 +64,7 @@ try:
     df['TSLA_Return'] = df['TSLA_Close'].pct_change()
     df['USD_KRW_Return'] = df['USD_KRW'].pct_change()
 
-    # RSI (임계값 65로 민감도 강화)
+    # RSI (임계값 68 — 과민반응 방지)
     df['LEV_RSI'] = calculate_rsi(df['LEV_Close'])
     df['Sector_Heat'] = (
         calculate_rsi(df['SDI_Close']) +
@@ -134,14 +134,14 @@ try:
     is_uptrend = current_price > df_clean['EMA_20'].iloc[-1]
 
     # ==========================================
-    # [4] 위험 점수 (RSI 임계값 65로 강화)
+    # [4] 위험 점수 (RSI 임계값 68 — 과민반응 방지)
     # ==========================================
     sell_risk_score = 0
 
-    if latest['LEV_RSI'] > 65:
-        sell_risk_score += (latest['LEV_RSI'] - 65) ** 1.8
-    if latest['Sector_Heat'] > 65:
-        sell_risk_score += (latest['Sector_Heat'] - 65) ** 1.5
+    if latest['LEV_RSI'] > 68:
+        sell_risk_score += (latest['LEV_RSI'] - 68) ** 1.8
+    if latest['Sector_Heat'] > 68:
+        sell_risk_score += (latest['Sector_Heat'] - 68) ** 1.5
     if latest['MACD_Hist'] < 0:
         sell_risk_score += 20
     if latest['VIX_Close'] > 22:
@@ -193,7 +193,7 @@ try:
     trend_msg = "🟢 대세 상승장 (주가 > 20일선)" if is_uptrend else "🔴 하락/역배열 (주가 < 20일선)"
 
     final_report = f"""
-🤖 [레버리지 하이브리드 통제소 v14.0]
+🤖 [레버리지 하이브리드 통제소 v14.1]
 
 📊 시장 분석
 * 매크로 추세: {trend_msg}
@@ -219,7 +219,7 @@ try:
 
     print(final_report)
     send_telegram_message(final_report)
-    print("\n✅ v14.0 리포트 전송 완료")
+    print("\n✅ v14.1 리포트 전송 완료")
 
 except Exception as e:
     error_msg = f"🚨 에러 발생:\n{traceback.format_exc()[:500]}"
