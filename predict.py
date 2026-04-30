@@ -24,7 +24,7 @@ def calculate_rsi(series, period=14):
 
 try:
     print("🚀 v13.0 기관급 하이브리드 추세-앙상블 모델 가동...")
-    start_date = '2024-01-01'
+    start_date = '2022-01-01'
 
     # [1] 데이터 수집
     tickers = {'TIGER 레버리지': '412570', '삼성SDI': '006400', 'LG엔솔': '373220', 'POSCO홀딩스': '005490'}
@@ -76,7 +76,7 @@ try:
 
     # [3] ML 모델 학습 
     # 타겟을 0.2% 이상 상승으로 낮춰 노이즈 필터링 강화
-    df_clean['Target'] = np.where(df_clean['LEV_Return'].shift(-1) > 0.002, 1, 0)
+    df_clean['Target'] = np.where(df_clean['LEV_Return'].shift(-1) > 0.005, 1, 0)
     X_train, y_train = df_clean[features].iloc[:-1], df_clean['Target'].iloc[:-1]
 
     split = int(len(X_train) * 0.8)
