@@ -1,18 +1,36 @@
 name: Run Battery Predictor (v13.0 Optimized)
-
 on:
   schedule:
-    # 1. KST 오전 08:40 (UTC 전날 23:40) - 월~금 아침 브리핑
-    - cron: '40 23 * * 0-4'
-    # 2. KST 오후 02:40 (UTC 당일 05:40) - 월~금 장 마감 전 통제
-    - cron: '40 05 * * 1-5'
+    # 1. KST 오전 08:40 (버퍼 30분 적용 → UTC 23:10, 일~목)
+    - cron: '10 23 * * 0-4'
+    # 2. KST 오후 02:40 (버퍼 30분 적용 → UTC 05:10, 월~금)
+    - cron: '10 05 * * 1-5'
+    # 3. 레포 비활성화 방지 (매월 1일 UTC 00:00)
+    - cron: '0 0 1 * *'
   workflow_dispatch: # 수동 실행 버튼
 
 jobs:
-  build:
+  keep-alive:
+    if: github.event.schedule == '0 0 1 * *'
     runs-on: ubuntu-latest
-    timeout-minutes: 15 # 지연 대비 시간 연장
-    
+    steps:
+      - name: 저장소 코드 불러오기
+        uses: actions/checkout@v4
+
+      - name: 레포 활성 상태 유지
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "$(date)" >> keep_alive.txt
+          git add keep_alive.txt
+          git commit -m "chore: keep-alive $(date +'%Y-%m')"
+          git push
+
+  build:
+    if: github.event.schedule != '0 0 1 * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
       - name: 저장소 코드 불러오기
         uses: actions/checkout@v4
