@@ -28,10 +28,10 @@ def calculate_rsi(series, period=14):
     return 100 - (100 / (1 + (gain / loss)))
 
 try:
-    print("🚀 v16.0 US AI·반도체 올인 전략 완전체 모델 가동...")
+    print("🚀 v16.1 US AI·반도체 올인 전략 완전체 모델 가동...")
 
     # ==========================================
-    # [1] 미국 매크로 데이터 수집 (시장 분위기 감지)
+    # [1] 미국 매크로 데이터 수집 (시장 분위기 감지) - 타임존 에러 완벽 대응
     # ==========================================
     start_date = '2022-01-01'
     
@@ -46,9 +46,19 @@ try:
     for name, t in macro_tickers.items():
         df_raw = yf.download(t, start=start_date, progress=False)
         if not df_raw.empty:
-            macro_data[name] = df_raw['Close']
+            # 🚨 타임존 무효화 (yfinance 버전 호환성 해결)
+            series = df_raw['Close'].squeeze()
+            if series.index.tz is not None:
+                series.index = series.index.tz_localize(None)
+            macro_data[name] = series
             
-    macro_df = pd.DataFrame(macro_data).ffill().dropna()
+    # Series들을 명시적으로 병합(join)하여 인덱스 충돌 방지
+    macro_df = pd.DataFrame(macro_data)
+    macro_df = macro_df.ffill().dropna()
+    
+    if macro_df.empty:
+        raise ValueError("매크로 데이터를 정상적으로 합치지 못했습니다. (yfinance 다운로드 누락)")
+
     macro_df['Nasdaq_Ret'] = macro_df['Nasdaq'].pct_change()
     macro_df['SMH_Ret'] = macro_df['SMH'].pct_change()
 
@@ -57,7 +67,7 @@ try:
     # ==========================================
     targets = ['XOVR', 'SOXL', 'NVDL', 'DXYZ', 'TECL']
     
-    final_report = "🤖 [US AI·반도체 올인 방향성 통제소 v16.0]\n"
+    final_report = "🤖 [US AI·반도체 올인 방향성 통제소 v16.1]\n"
     final_report += "=" * 40 + "\n"
 
     for ticker in targets:
@@ -70,11 +80,14 @@ try:
             final_report += "-" * 40 + "\n"
             continue
             
+        # 🚨 타겟 데이터도 타임존 제거 (매크로 데이터와 병합 시 충돌 방지)
         df = pd.DataFrame({
-            'High': tgt_data['High'],
-            'Low': tgt_data['Low'],
-            'Close': tgt_data['Close']
+            'High': tgt_data['High'].squeeze(),
+            'Low': tgt_data['Low'].squeeze(),
+            'Close': tgt_data['Close'].squeeze()
         })
+        if df.index.tz is not None:
+            df.index = df.index.tz_localize(None)
         
         # 매크로 데이터와 병합
         df = df.join(macro_df, how='left').ffill().dropna()
@@ -103,6 +116,9 @@ try:
         df['Target'] = np.where(df['Close'].pct_change().shift(-1) > 0.005, 1, 0)
         df_clean = df.dropna()
         
+        if df_clean.empty:
+            continue
+
         current_price = df_clean['Close'].iloc[-1]
         is_uptrend = current_price > df_clean['EMA_20'].iloc[-1]
         latest_atr = df_clean['ATR'].iloc[-1]
@@ -138,32 +154,4 @@ try:
         ], voting='soft')
         
         model.fit(X.iloc[:split], y.iloc[:split])
-        accuracy = accuracy_score(y.iloc[split:], model.predict(X.iloc[split:]))
-        
-        latest = df_clean[features].iloc[-1]
-        probs = model.predict_proba(latest.values.reshape(1, -1))[0]
-        up_prob, down_prob = probs[1] * 100, probs[0] * 100
-        
-        if up_prob >= 65:
-            direction = "🟢 강한 상승"
-        elif up_prob >= 50:
-            direction = "🟡 약한 상승"
-        elif down_prob >= 65:
-            direction = "🔴 강한 하락"
-        else:
-            direction = "🟠 약한 하락"
-            
-        final_report += f"📌 {ticker} 예측 결과\n"
-        final_report += f"  * {direction} (상승 {up_prob:.1f}% / 하락 {down_prob:.1f}%)\n"
-        final_report += f"  * 현재가: ${current_price:.2f} | 매도 Limit: ${stop_loss:.2f}\n"
-        final_report += f"  * 상태: 신뢰도 {accuracy*100:.1f}% | RSI {latest_rsi:.1f}\n"
-        final_report += "-" * 40 + "\n"
-
-    print("\n" + final_report)
-    send_telegram_message(final_report)
-    print("✅ v16.0 텔레그램 리포트 전송 완료")
-
-except Exception as e:
-    error_msg = f"🚨 에러 발생:\n{traceback.format_exc()[:500]}"
-    print(error_msg)
-    send_telegram_message(error_msg)
+        accuracy = accuracy_score(y.iloc
