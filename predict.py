@@ -5,7 +5,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -28,10 +28,10 @@ def calculate_rsi(series, period=14):
     return 100 - (100 / (1 + (gain / loss)))
 
 try:
-    print("🚀 v16.2 US AI·반도체 올인 전략 완전체 모델 가동 (Claude 패치 적용)...")
+    print("🚀 v16.3 US AI·반도체 올인 전략 완전체 모델 가동 (이벤트 드리븐 & F1-Score 패치)...")
 
     # ==========================================
-    # [1] 미국 매크로 데이터 수집 (시장의 방향성 감지)
+    # [1] 미국 매크로 데이터 수집
     # ==========================================
     start_date = '2022-01-01'
     
@@ -61,11 +61,11 @@ try:
     macro_df['SMH_Ret'] = macro_df['SMH'].pct_change()
 
     # ==========================================
-    # [2] 타겟 종목 리스트 (야수 올인 시나리오)
+    # [2] 타겟 종목 리스트
     # ==========================================
     targets = ['XOVR', 'SOXL', 'NVDL', 'DXYZ', 'TECL']
     
-    final_report = "🤖 [US AI·반도체 올인 방향성 통제소 v16.2]\n"
+    final_report = "🤖 [US AI·반도체 올인 방향성 통제소 v16.3]\n"
     final_report += "=" * 40 + "\n"
 
     for ticker in targets:
@@ -106,28 +106,32 @@ try:
             np.abs(df['Low'] - df['Close'].shift())
         ], axis=1).max(axis=1).rolling(14).mean()
         
-        # [수정 1] Target 기준 상향: 레버리지 특성상 일간 1.5%(0.015) 이상 상승해야 유의미한 신호로 판단
-        df['Target'] = np.where(df['Close'].pct_change().shift(-1) > 0.015, 1, 0)
-        df_clean = df.dropna()
+        # [수정 1] 데이터 누수(Data Leakage) 완벽 차단을 위한 명시적 분리
+        df['Next_Ret'] = df['Close'].pct_change().shift(-1)
         
-        if df_clean.empty:
-            continue
-
-        current_price = df_clean['Close'].iloc[-1]
-        is_uptrend = current_price > df_clean['EMA_20'].iloc[-1]
-        latest_atr = df_clean['ATR'].iloc[-1]
-        latest_rsi = df_clean['RSI'].iloc[-1]
+        features = ['Nasdaq_Ret', 'SMH_Ret', 'VIX', 'TNX', 'RSI', 'MACD_Hist', 'Price_to_EMA20']
         
-        # [수정 2] ATR 스탑로스 버그 수정: 최근 고점이 아닌 '현재가(current_price)' 기준으로 하방 리스크 제한
+        # 예측에 사용할 '오늘'의 최신 데이터 추출 (Next_Ret이 NaN인 마지막 행)
+        latest_features = df[features].iloc[-1]
+        current_price = df['Close'].iloc[-1]
+        is_uptrend = current_price > df['EMA_20'].iloc[-1]
+        latest_atr = df['ATR'].iloc[-1]
+        latest_rsi = df['RSI'].iloc[-1]
+        
+        # 스탑로스 계산 (현재가 기준 하드캡 작동)
         rsi_risk = max(0, latest_rsi - 68)
         atr_multiplier = max(1.0, 3.0 - (rsi_risk / 10))
-        
-        hard_cap = current_price * 0.90  # 현재가 기준 최대 -10% 하드캡
+        hard_cap = current_price * 0.90
         stop_loss = current_price - (latest_atr * atr_multiplier)
-        stop_loss = max(stop_loss, hard_cap) 
+        stop_loss = max(stop_loss, hard_cap)
         
-        # 상장 초기 종목(DXYZ, XOVR 등) 데이터 부족 시 예외 처리
-        if len(df_clean) < 100:
+        # 학습용 데이터셋 구축 (마지막 행 제외 및 타겟 라벨링)
+        df_train = df.dropna(subset=['Next_Ret'] + features)
+        df_train['Target'] = np.where(df_train['Next_Ret'] > 0.015, 1, 0)
+        
+        # [수정 3] 최소 학습 데이터 요구량 300행으로 상향
+        MIN_TRAIN_ROWS = 300
+        if len(df_train) < MIN_TRAIN_ROWS:
             final_report += f"🔍 {ticker} (상장 초기 데이터 부족으로 기술적 지표만 출력)\n"
             final_report += f"  * 현재가: ${current_price:.2f} | 매도 Limit: ${stop_loss:.2f}\n"
             final_report += f"  * RSI: {latest_rsi:.1f} | 추세: {'🟢 상승' if is_uptrend else '🔴 하락'}\n"
@@ -135,12 +139,10 @@ try:
             continue
             
         # ==========================================
-        # [4] ML 모델 학습 및 예측
+        # [4] ML 모델 학습 및 예측 (F1-Score 평가)
         # ==========================================
-        features = ['Nasdaq_Ret', 'SMH_Ret', 'VIX', 'TNX', 'RSI', 'MACD_Hist', 'Price_to_EMA20']
-        
-        X = df_clean[features].iloc[:-1]
-        y = df_clean['Target'].iloc[:-1]
+        X = df_train[features]
+        y = df_train['Target']
         split = int(len(X) * 0.8)
         
         model = VotingClassifier(estimators=[
@@ -149,21 +151,22 @@ try:
         ], voting='soft')
         
         model.fit(X.iloc[:split], y.iloc[:split])
-        accuracy = accuracy_score(y.iloc[split:], model.predict(X.iloc[split:]))
         
-        # [수정 3] 신뢰도 하한선 설정: 정확도 58% 미만이면 동전 던지기로 간주하고 관망 처리
-        MIN_ACCURACY = 0.58
+        # [수정 2] 정확도(Accuracy) 대신 F1-Score 사용
+        preds = model.predict(X.iloc[split:])
+        f1 = f1_score(y.iloc[split:], preds)
         
-        if accuracy < MIN_ACCURACY:
+        MIN_F1 = 0.55
+        
+        if f1 < MIN_F1:
             final_report += f"📌 {ticker} 예측 결과\n"
-            final_report += f"  * ⚠️ 관망 (모델 신뢰도 {accuracy*100:.1f}%로 미달)\n"
+            final_report += f"  * ⚠️ 관망 (모델 신뢰도 F1 {f1*100:.1f}%로 미달)\n"
             final_report += f"  * 현재가: ${current_price:.2f} | 매도 Limit: ${stop_loss:.2f}\n"
             final_report += f"  * 상태: RSI {latest_rsi:.1f} | 추세: {'🟢 상승' if is_uptrend else '🔴 하락'}\n"
             final_report += "-" * 40 + "\n"
             continue
         
-        latest = df_clean[features].iloc[-1]
-        probs = model.predict_proba(latest.values.reshape(1, -1))[0]
+        probs = model.predict_proba(latest_features.values.reshape(1, -1))[0]
         up_prob, down_prob = probs[1] * 100, probs[0] * 100
         
         if up_prob >= 65:
@@ -178,12 +181,12 @@ try:
         final_report += f"📌 {ticker} 예측 결과\n"
         final_report += f"  * {direction} (상승 {up_prob:.1f}% / 하락 {down_prob:.1f}%)\n"
         final_report += f"  * 현재가: ${current_price:.2f} | 매도 Limit: ${stop_loss:.2f}\n"
-        final_report += f"  * 상태: 신뢰도 {accuracy*100:.1f}% | RSI {latest_rsi:.1f}\n"
+        final_report += f"  * 상태: 신뢰도(F1) {f1*100:.1f}% | RSI {latest_rsi:.1f}\n"
         final_report += "-" * 40 + "\n"
 
     print("\n" + final_report)
     send_telegram_message(final_report)
-    print("✅ v16.2 텔레그램 리포트 전송 완료")
+    print("✅ v16.3 텔레그램 리포트 전송 완료")
 
 except Exception as e:
     error_msg = f"🚨 에러 발생:\n{traceback.format_exc()[:500]}"
