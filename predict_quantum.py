@@ -28,38 +28,52 @@ def calculate_rsi(series, period=14):
     return 100 - (100 / (1 + (gain / loss)))
 
 try:
-    print("🔮 양자컴퓨팅 4개사 3개월 중기 대세 분석 스크립트 v1.1 가동...")
+    print("🔮 [v1.2] 양자컴퓨팅 4개사 듀얼 타임프레임 리스크 관리 엔진 가동...")
     start_date = '2021-01-01'
     
     macro_tickers = {'Nasdaq': '^IXIC', 'VIX': '^VIX', 'TNX': '^TNX'}
-    macro_data = {}
+    macro_raw = {}
     for name, t in macro_tickers.items():
         df_raw = yf.download(t, start=start_date, progress=False)
         if not df_raw.empty:
             series = df_raw['Close'].squeeze()
             if series.index.tz is not None:
                 series.index = series.index.tz_localize(None)
-            macro_data[name] = series
-    macro_df = pd.DataFrame(macro_data).ffill().dropna()
-
-    # [개선] 3개월(60일) 예측 주기에 맞춘 매크로 트렌드 가공
-    macro_df['Nasdaq_60D_Ret'] = macro_df['Nasdaq'].pct_change(60) # 3개월 누적 수익률
-    macro_df['TNX_60D_Diff'] = macro_df['TNX'].diff(60)           # 3개월 금리 변동 폭
-    macro_df['VIX_60D_Mean'] = macro_df['VIX'].rolling(60).mean()   # 3개월 평균 공포지수
-    macro_df = macro_df.dropna()
+            macro_raw[name] = series
+    macro_base = pd.DataFrame(macro_raw).ffill().dropna()
 
     quantum_targets = ['IONQ', 'INFQ', 'QBTS', 'RGTI']
     
-    final_report = "⚛️ [QUANTUM 양자컴퓨팅 중기 대세 통제소 v1.1]\n"
-    final_report += "📅 분석 기준: 향후 3개월(60영업일 뒤) 대세 상승 확률\n"
+    final_report = "⚛️ [QUANTUM 양자컴퓨팅 리스크 관리 통제소 v1.2]\n"
     final_report += "=" * 40 + "\n"
 
     for ticker in quantum_targets:
         tgt_data = yf.download(ticker, start=start_date, progress=False)
         if tgt_data.empty:
-            final_report += f"⚠️ {ticker}: 데이터 수집 불가\n"
+            final_report += f"📌 {ticker}\n  * ⚠️ 데이터 수집 불가\n"
+            final_report += "-" * 40 + "\n"
             continue
             
+        # --------------------------------------------------------
+        # [디벨롭 1] 듀얼 타임프레임 엔진 (데이터 길이에 따른 자동 전환)
+        # --------------------------------------------------------
+        raw_len = len(tgt_data)
+        if raw_len >= 250:
+            lookahead = 60
+            window_name = "3개월 (60영업일 뒤)"
+            min_rows = 120
+        else:
+            lookahead = 20
+            window_name = "1개월 (20영업일 뒤)"
+            min_rows = 40  # 데이터가 극도로 적은 신생 종목용 커트라인
+
+        # 해당 주기에 맞춤형 매크로 트렌드 가공
+        macro_df = macro_base.copy()
+        macro_df['Macro_Ret'] = macro_df['Nasdaq'].pct_change(lookahead)
+        macro_df['TNX_Diff'] = macro_df['TNX'].diff(lookahead)
+        macro_df['VIX_Mean'] = macro_df['VIX'].rolling(lookahead).mean()
+        macro_df = macro_df.dropna()
+
         df = pd.DataFrame({
             'High': tgt_data['High'].squeeze(),
             'Low': tgt_data['Low'].squeeze(),
@@ -70,37 +84,35 @@ try:
             
         df = df.join(macro_df, how='left').ffill().dropna()
         
-        # 중기 모멘텀 지표
-        df['RSI_Medium'] = calculate_rsi(df['Close'], period=42) 
-        df['MA_60'] = df['Close'].rolling(60).mean()
-        df['Disparity_60'] = (df['Close'] / df['MA_60']) - 1
+        # 타임프레임 최적화 피처 엔지니어링
+        df['RSI_Target'] = calculate_rsi(df['Close'], period=int(lookahead * 0.7)) 
+        df['MA_Target'] = df['Close'].rolling(lookahead).mean()
+        df['Disparity_Target'] = (df['Close'] / df['MA_Target']) - 1
         
-        # 변동성 및 타겟 라벨링
         df['Log_Ret'] = np.log(df['Close'] / df['Close'].shift(1))
-        df['Vol_60'] = df['Log_Ret'].rolling(60).std() * np.sqrt(252)
-        df['Target_Threshold'] = df['Vol_60'] * 0.3 * (60 / 252) # 타겟 문턱값 최적화
+        df['Vol_Target'] = df['Log_Ret'].rolling(lookahead).std() * np.sqrt(252)
+        df['Target_Threshold'] = df['Vol_Target'] * 0.3 * (lookahead / 252)
         
-        df['Future_60D_Close'] = df['Close'].shift(-60)
+        # 미래 타겟 매칭
+        df['Future_Close'] = df['Close'].shift(-lookahead)
         
-        # [개선] 정제된 트렌드 피처셋 사용
-        features = ['Nasdaq_60D_Ret', 'TNX_60D_Diff', 'VIX_60D_Mean', 'RSI_Medium', 'Disparity_60', 'Vol_60']
+        features = ['Macro_Ret', 'TNX_Diff', 'VIX_Mean', 'RSI_Target', 'Disparity_Target', 'Vol_Target']
         
         latest_features = df[features].iloc[-1]
         current_price = df['Close'].iloc[-1]
-        disp_60 = df['Disparity_60'].iloc[-1]
+        disp_target = df['Disparity_Target'].iloc[-1]
+        ma_target_val = df['MA_Target'].iloc[-1]
         
-        df_train = df.dropna(subset=['Future_60D_Close'] + features).copy()
-        df_train['Target'] = np.where((df_train['Future_60D_Close'] / df_train['Close'] - 1) > df_train['Target_Threshold'], 1, 0)
+        df_train = df.dropna(subset=['Future_Close'] + features).copy()
+        df_train['Target'] = np.where((df_train['Future_Close'] / df_train['Close'] - 1) > df_train['Target_Threshold'], 1, 0)
         
-        # [개선] 신생 종목을 위한 최소 행 기준 완화 (300 -> 120)
-        MIN_LONG_ROWS = 120
-        if len(df_train) < MIN_LONG_ROWS:
-            final_report += f"📌 {ticker}\n"
-            final_report += f"  * ⚠️ 학습 데이터 부족 (현재 {len(df_train)}행 / 최소 {MIN_LONG_ROWS}행 필요)\n"
-            final_report += f"  * 현재가: ${current_price:.2f}\n"
+        if len(df_train) < min_rows:
+            final_report += f"📌 {ticker} ({window_name})\n"
+            final_report += f"  * ⚠️ 학습 데이터 부족 (현재 {len(df_train)}행)\n"
             final_report += "-" * 40 + "\n"
             continue
             
+        # 머신러닝 연산
         X = df_train[features]
         y = df_train['Target']
         split = int(len(X) * 0.8)
@@ -120,33 +132,47 @@ try:
         preds = (ensemble_test_probs >= 0.5).astype(int)
         f1 = f1_score(y_test, preds, average='macro', zero_division=0)
         
-        # 최신 데이터 예측
+        # 오늘 기준 상승 확률 계산
         rf_latest = rf.predict_proba(latest_features.values.reshape(1, -1))[0][1]
         gb_latest = gb.predict_proba(latest_features.values.reshape(1, -1))[0][1]
         up_prob = ((rf_latest + gb_latest) / 2) * 100
         
-        # [개선] 신뢰도 미달 시 차단 대신 경고 후 확률 오픈
-        status_str = f"신뢰도 F1 {f1*100:.1f}%"
-        if f1 < 0.48:
-            status_str = f"⚠️ 신뢰도 낮음 ({status_str})"
-        
-        if up_prob >= 62:
-            decision = "🟢 [중기 우상향] 3개월 투자 매력도 높음"
-        elif up_prob >= 40:
-            decision = "🟡 [중기 횡보] 추가 매수 보류 및 보유 유지"
+        # --------------------------------------------------------
+        # [디벨롭 2] 가짜 신호 강제 차단 필터 (F1 50% 미만 덮어쓰기)
+        # --------------------------------------------------------
+        if f1 < 0.50:
+            decision = "🔴 [매매 보류] 모델 신뢰도 미달로 예측 무효화"
+            prob_str = "계산 불가 (영역 불확실)"
         else:
-            decision = "🔴 [중기 위험] 3개월 내 하방 압력 우세"
-            
-        final_report += f"📌 {ticker} 분석 결과\n"
+            prob_str = f"{up_prob:.1f}%"
+            if up_prob >= 62:
+                decision = "🟢 [중기 우상향] 적극적 모멘텀 유효"
+            elif up_prob >= 40:
+                decision = "🟡 [중기 횡보] 추가 매수 금지 및 비중 유지"
+            else:
+                decision = "🔴 [중기 위험] 하방 압력 우세, 리스크 관리"
+                
+        # --------------------------------------------------------
+        # [디벨롭 3] 이격도 연동형 안전 지정가 거미줄 계산기
+        # --------------------------------------------------------
+        if disp_target > 0.15:  # 이격도가 15% 이상 벌어진 과열 상태일 때
+            safe_lower = ma_target_val * 0.95
+            safe_upper = ma_target_val * 1.02
+            target_band_str = f"${safe_lower:.2f} ~ ${safe_upper:.2f} (과열 진정 타점)"
+        else:
+            target_band_str = "현재가 인근 분할 대응 가능"
+
+        final_report += f"📌 {ticker} 분석 결과 [{window_name}]\n"
         final_report += f"  * 🎯 결론: {decision}\n"
-        final_report += f"  * 3개월 뒤 상승 확률: {up_prob:.1f}%\n"
-        final_report += f"  * 상태: {status_str} | 60일 이격도 {disp_60*100:.1f}%\n"
+        final_report += f"  * {window_name} 상승 확률: {prob_str}\n"
+        final_report += f"  * 안전 매수 지정가 밴드: {target_band_str}\n"
+        final_report += f"  * 상태: 분석 신뢰도 F1 {f1*100:.1f}% | 이격도 {disp_target*100:.1f}%\n"
         final_report += "-" * 40 + "\n"
 
     print(final_report)
     send_telegram_message(final_report)
 
 except Exception as e:
-    error_msg = f"🚨 양자 모델 에러:\n{traceback.format_exc()[:500]}"
+    error_msg = f"🚨 양자 제어 엔진 v1.2 에러:\n{traceback.format_exc()[:500]}"
     print(error_msg)
     send_telegram_message(error_msg)
