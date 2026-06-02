@@ -31,33 +31,31 @@ try:
     print("🚀 v16.1 US AI·반도체 올인 전략 완전체 모델 가동...")
 
     # ==========================================
-    # [1] 미국 매크로 데이터 수집 (시장 분위기 감지) - 타임존 에러 완벽 대응
+    # [1] 미국 매크로 데이터 수집 (시장의 방향성 감지)
     # ==========================================
     start_date = '2022-01-01'
     
     macro_tickers = {
         'Nasdaq': '^IXIC', 
-        'SMH': 'SMH',      # 반도체 섹터 열기
-        'VIX': '^VIX',     # 공포 지수
-        'TNX': '^TNX'      # 미 10년물 국채 금리
+        'SMH': 'SMH',      
+        'VIX': '^VIX',     
+        'TNX': '^TNX'      
     }
     
     macro_data = {}
     for name, t in macro_tickers.items():
         df_raw = yf.download(t, start=start_date, progress=False)
         if not df_raw.empty:
-            # 🚨 타임존 무효화 (yfinance 버전 호환성 해결)
             series = df_raw['Close'].squeeze()
             if series.index.tz is not None:
                 series.index = series.index.tz_localize(None)
             macro_data[name] = series
             
-    # Series들을 명시적으로 병합(join)하여 인덱스 충돌 방지
     macro_df = pd.DataFrame(macro_data)
     macro_df = macro_df.ffill().dropna()
     
     if macro_df.empty:
-        raise ValueError("매크로 데이터를 정상적으로 합치지 못했습니다. (yfinance 다운로드 누락)")
+        raise ValueError("매크로 데이터를 정상적으로 합치지 못했습니다.")
 
     macro_df['Nasdaq_Ret'] = macro_df['Nasdaq'].pct_change()
     macro_df['SMH_Ret'] = macro_df['SMH'].pct_change()
@@ -74,13 +72,11 @@ try:
         print(f"진행 중: {ticker} 분석...")
         tgt_data = yf.download(ticker, start=start_date, progress=False)
         
-        # yfinance 데이터 누락 및 상장 전 티커 방어 로직
         if tgt_data.empty:
-            final_report += f"⚠️ {ticker}: 현재 데이터를 불러올 수 없습니다 (비상장 또는 티커 확인 필요).\n"
+            final_report += f"⚠️ {ticker}: 현재 데이터를 불러올 수 없습니다.\n"
             final_report += "-" * 40 + "\n"
             continue
             
-        # 🚨 타겟 데이터도 타임존 제거 (매크로 데이터와 병합 시 충돌 방지)
         df = pd.DataFrame({
             'High': tgt_data['High'].squeeze(),
             'Low': tgt_data['Low'].squeeze(),
@@ -89,11 +85,10 @@ try:
         if df.index.tz is not None:
             df.index = df.index.tz_localize(None)
         
-        # 매크로 데이터와 병합
         df = df.join(macro_df, how='left').ffill().dropna()
         
         # ==========================================
-        # [3] 피처 엔지니어링 (공통)
+        # [3] 피처 엔지니어링 (기술적 지표 계산)
         # ==========================================
         df['RSI'] = calculate_rsi(df['Close'])
         
@@ -105,14 +100,12 @@ try:
         df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
         df['Price_to_EMA20'] = (df['Close'] / df['EMA_20']) - 1
         
-        # ATR 계산
         df['ATR'] = pd.concat([
             df['High'] - df['Low'],
             np.abs(df['High'] - df['Close'].shift()),
             np.abs(df['Low'] - df['Close'].shift())
         ], axis=1).max(axis=1).rolling(14).mean()
         
-        # 내일 0.5% 이상 상승 여부를 Target으로 설정
         df['Target'] = np.where(df['Close'].pct_change().shift(-1) > 0.005, 1, 0)
         df_clean = df.dropna()
         
@@ -124,14 +117,14 @@ try:
         latest_atr = df_clean['ATR'].iloc[-1]
         latest_rsi = df_clean['RSI'].iloc[-1]
         
-        # ATR 스탑로스 달러 환산 (최대 -10% 하드캡)
+        # ATR 변동성 기반 스탑로스 계산 (최대 -10% 하드캡 보호)
         rsi_risk = max(0, latest_rsi - 68)
         atr_multiplier = max(1.0, 3.0 - (rsi_risk / 10))
         recent_high = df_clean['Close'].tail(5).max()
         stop_loss = recent_high - (latest_atr * atr_multiplier)
         stop_loss = max(stop_loss, recent_high * 0.90) 
         
-        # 🚨 상장 초기 종목(DXYZ 등) 방어: 데이터가 100일 미만이면 ML 스킵하고 지표만 출력
+        # 상장 초기 종목(DXYZ, XOVR 등) 데이터 부족 시 예외 처리
         if len(df_clean) < 100:
             final_report += f"🔍 {ticker} (상장 초기 데이터 부족으로 기술적 지표만 출력)\n"
             final_report += f"  * 현재가: ${current_price:.2f} | 매도 Limit: ${stop_loss:.2f}\n"
@@ -140,7 +133,7 @@ try:
             continue
             
         # ==========================================
-        # [4] ML 모델 학습 및 예측 (SOXL, NVDL, TECL 등)
+        # [4] ML 모델 학습 및 예측
         # ==========================================
         features = ['Nasdaq_Ret', 'SMH_Ret', 'VIX', 'TNX', 'RSI', 'MACD_Hist', 'Price_to_EMA20']
         
@@ -154,4 +147,32 @@ try:
         ], voting='soft')
         
         model.fit(X.iloc[:split], y.iloc[:split])
-        accuracy = accuracy_score(y.iloc
+        accuracy = accuracy_score(y.iloc[split:], model.predict(X.iloc[split:]))
+        
+        latest = df_clean[features].iloc[-1]
+        probs = model.predict_proba(latest.values.reshape(1, -1))[0]
+        up_prob, down_prob = probs[1] * 100, probs[0] * 100
+        
+        if up_prob >= 65:
+            direction = "🟢 강한 상승"
+        elif up_prob >= 50:
+            direction = "🟡 약한 상승"
+        elif down_prob >= 65:
+            direction = "🔴 강한 하락"
+        else:
+            direction = "🟠 약한 하락"
+            
+        final_report += f"📌 {ticker} 예측 결과\n"
+        final_report += f"  * {direction} (상승 {up_prob:.1f}% / 하락 {down_prob:.1f}%)\n"
+        final_report += f"  * 현재가: ${current_price:.2f} | 매도 Limit: ${stop_loss:.2f}\n"
+        final_report += f"  * 상태: 신뢰도 {accuracy*100:.1f}% | RSI {latest_rsi:.1f}\n"
+        final_report += "-" * 40 + "\n"
+
+    print("\n" + final_report)
+    send_telegram_message(final_report)
+    print("✅ v16.1 텔레그램 리포트 전송 완료")
+
+except Exception as e:
+    error_msg = f"🚨 에러 발생:\n{traceback.format_exc()[:500]}"
+    print(error_msg)
+    send_telegram_message(error_msg)
