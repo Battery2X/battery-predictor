@@ -49,4 +49,21 @@ jobs:
 
       - name: US AI·반도체 정밀 분석 실행 (단기)
         env:
-          TELEGRAM
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: python predict.py
+
+      - name: US AI·반도체 장기 매크로 통제소 실행 (장기)
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: python predict_long.py
+
+      - name: 양자컴퓨팅 3개월 중기 대세 분석 실행 (양자)
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: python predict_quantum.py
