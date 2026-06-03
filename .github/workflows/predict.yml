@@ -6,18 +6,19 @@ on:
     - cron: '15 13 * * 1-5'
 
     # 2. KST 아침 06:15 (미국장 마감 후 안전권) → UTC 21:15, 화~토
-    #    [BUG FIX] 기존 20:15는 겨울(EST) 기준 마감 45분 전 실행 문제
-    #    UTC 21:15로 변경 시 여름(EDT) 마감 75분 후 / 겨울(EST) 마감 15분 후
+    #    여름(EDT): 마감 UTC 20:00 → 실행 75분 후 ✅
+    #    겨울(EST): 마감 UTC 21:00 → 실행 15분 후 ✅
+    #    기존 20:15는 겨울 기준 마감 45분 전 실행 버그 있었음
     - cron: '15 21 * * 2-6'
 
     # 3. 레포 비활성화 방지 (매월 1일 UTC 00:00)
     - cron: '0 0 1 * *'
 
-  workflow_dispatch: # 수동 실행 버튼
+  workflow_dispatch:
 
 jobs:
   # ============================================================
-  # JOB 1: 레포 활성 상태 유지 (월 1회)
+  # JOB 1: 레포 활성 유지 (월 1회)
   # ============================================================
   keep-alive:
     if: github.event.schedule == '0 0 1 * *'
@@ -39,14 +40,11 @@ jobs:
   # JOB 2: 퀀트 분석 실행 (평일 장전/장후)
   # ============================================================
   build:
-    # [IMPROVEMENT] 가독성 개선: 복잡한 != 조건 대신 명시적 schedule 목록
     if: |
       github.event.schedule == '15 13 * * 1-5' ||
       github.event.schedule == '15 21 * * 2-6' ||
       github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-
-    # [BUG FIX] timeout 상향: 3스크립트 합산 최대 19분 → 30분으로 여유 확보
     timeout-minutes: 30
 
     steps:
@@ -58,7 +56,8 @@ jobs:
         with:
           python-version: '3.10'
 
-      # [IMPROVEMENT] pip 캐시 추가: 매 실행마다 1~2분 설치 → 30초로 단축
+      # Gemini B안 채택: requirements.txt 해시 기반 캐시
+      # → 라이브러리 변경 시 파일만 수정하면 자동 캐시 갱신
       - name: pip 캐시 설정
         uses: actions/cache@v4
         with:
@@ -70,12 +69,9 @@ jobs:
       - name: 필수 라이브러리 설치
         run: |
           python -m pip install --upgrade pip
-          pip install yfinance pandas numpy scikit-learn requests
+          pip install -r requirements.txt
 
-      # [BUG FIX] continue-on-error: true 추가
-      # 이유: 스크립트 1개가 에러나면 나머지 2개도 실행 안 되는 문제 방지
-      # 각 스크립트가 독립적으로 실행되어 텔레그램에 개별 리포트 전송 보장
-      - name: 📊 단기 분석 실행 (predict.py / v16.x)
+      - name: 📊 단기 분석 실행 (predict.py)
         continue-on-error: true
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -83,7 +79,7 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: python predict.py
 
-      - name: 🦅 장기 매크로 분석 실행 (predict_long.py / v17.x)
+      - name: 🦅 장기 매크로 분석 실행 (predict_long.py)
         continue-on-error: true
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -91,7 +87,7 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: python predict_long.py
 
-      - name: ⚛️ 양자컴퓨팅 분석 실행 (predict_quantum.py / v1.x)
+      - name: ⚛️ 양자컴퓨팅 분석 실행 (predict_quantum.py)
         continue-on-error: true
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
