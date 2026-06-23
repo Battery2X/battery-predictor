@@ -12,37 +12,68 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ============================================================
-# v16.6 변경사항
+# v16.7 변경사항 — 4가지 구조적 개선
 # ============================================================
-# [종목 교체] SOXL, TECL 제거 → AVGO, MU 추가
-#   - SOXL/TECL: 만성적 P/R 미달, 3배 레버리지 변동성 감쇄 가치 낮음
-#   - AVGO: 모멘텀 프레임워크 1위 — AI 반도체 매출 가속, 추정치 개정 최강
-#   - MU: 모멘텀 프레임워크 2위 — HBM 슈퍼사이클, 단 실적 변동성 큼
-# [유지] XOVR(이벤트드리븐), NVDL(실보유), DXYZ(8월재판단)
-# 기존 v16.5 개선사항(P/R필터, 신호반전감지, 이벤트캘린더) 그대로 유지
+# [개선 1] 레짐 전환 감지 피처 추가
+#   - 52주 신고가 갱신 빈도(최근 20일 중 신고가 비율)
+#   - 단기추세(20일 기울기) vs 장기추세(120일 기울기) 차이
+#   - MU처럼 구조적 재평가 중인 종목을 모델이 별도 인식하게 함
+#
+# [개선 2] BB% 해석 이원화 (종목 카테고리별 차등)
+#   - GROWTH 카테고리(최근 120일 +50% 이상 상승): BB%>100을
+#     "과매수 경고"가 아니라 "강세 추세 확인"으로 재해석
+#   - STANDARD 카테고리: 기존 방식(평균회귀 가정) 유지
+#
+# [개선 3] 실적 발표 이벤트 오버라이드
+#   - 이벤트 캘린더에 종목별 실적 발표일 + 컨센서스 방향성 추가
+#   - D-2 이내 실적 종목은 ML 신호와 별개로 펀더멘털 컨센서스 섹션 출력
+#
+# [개선 4] P/R 필터 카테고리별 동적 임계값
+#   - GROWTH 종목: MIN_PR 0.40 (변동성 높아 기준 완화)
+#   - LEVERAGE 종목: MIN_PR 0.50 (변동성 가장 높아 기준 강화)
+#   - STANDARD 종목: MIN_PR 0.48 (기존 유지)
 # ============================================================
 
+
+# ============================================================
+# [개선 3] 이벤트 캘린더 + 컨센서스 방향성
+# ============================================================
 MARKET_EVENTS = {
-    "2026-06-18": "FOMC 금리 결정 (새벽 3:00 KST)",
-    "2026-06-20": "미국 6월 CPI 발표",
-    "2026-06-25": "Micron(MU) 실적 발표 예정 — 변동성 17.6% 가격책정",
-    "2026-07-29": "FOMC 7월 회의",
-    "2026-08-25": "NVDA Q2 실적 발표 (예정)",
-    "2026-08-27": "FOMC 잭슨홀 미팅",
-    "2026-09-16": "FOMC 9월 회의",
+    "2026-06-18": {"desc": "FOMC 금리 결정 (새벽 3:00 KST)", "ticker": None, "consensus": None},
+    "2026-06-20": {"desc": "미국 6월 CPI 발표", "ticker": None, "consensus": None},
+    "2026-06-24": {
+        "desc": "Micron(MU) Q3 FY26 실적 발표 (장마감 후)",
+        "ticker": "MU",
+        "consensus": "컨센서스: EPS $19.72~19.95 / 매출 $34.4~34.8B (전년比 +270%) | HBM 2026 완판·풀백로그 | 옵션시장 변동성 ±17% 가격책정"
+    },
+    "2026-07-29": {"desc": "FOMC 7월 회의", "ticker": None, "consensus": None},
+    "2026-08-25": {
+        "desc": "NVDA Q2 실적 발표 (예정)",
+        "ticker": "NVDA",
+        "consensus": "중국 매출 가이던스 제외 지속 여부 핵심 관전포인트"
+    },
+    "2026-08-27": {"desc": "FOMC 잭슨홀 미팅", "ticker": None, "consensus": None},
+    "2026-09-16": {"desc": "FOMC 9월 회의", "ticker": None, "consensus": None},
 }
 
 def check_upcoming_events():
     from datetime import datetime
     today = datetime.now().date()
     out = []
-    for date_str, event in MARKET_EVENTS.items():
+    out_detail = {}
+    for date_str, info in MARKET_EVENTS.items():
         ev_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         days_left = (ev_date - today).days
         if 0 <= days_left <= 2:
             prefix = "🔴 오늘" if days_left == 0 else f"⚠️ D-{days_left}"
-            out.append(f"  {prefix}: {event}")
-    return out
+            out.append(f"  {prefix}: {info['desc']}")
+            if info['ticker']:
+                out_detail[info['ticker']] = {
+                    'days_left': days_left,
+                    'consensus': info['consensus']
+                }
+    return out, out_detail
+
 
 SIGNAL_HISTORY_FILE = "signal_history.json"
 
@@ -74,6 +105,7 @@ def detect_signal_flip(ticker, today_sig, prev_history):
         return f"🔄 신호 반전: {prev_sig} → {today_sig}"
     return None
 
+
 def send_telegram_message(text):
     token = os.environ.get("TELEGRAM_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -84,16 +116,19 @@ def send_telegram_message(text):
         except Exception as e:
             print("텔레그램 전송 실패:", e)
 
+
 def calculate_rsi(series, period=14):
     delta = series.diff()
     gain = delta.where(delta > 0, 0).ewm(alpha=1/period, adjust=False).mean()
     loss = -delta.where(delta < 0, 0).ewm(alpha=1/period, adjust=False).mean()
     return 100 - (100 / (1 + (gain / loss)))
 
+
 def calculate_bollinger(series, period=20, std_mult=2.0):
     ma = series.rolling(period).mean()
     std = series.rolling(period).std()
     return ma + std_mult*std, ma, ma - std_mult*std
+
 
 def get_dynamic_threshold(close_series):
     daily_ret = close_series.pct_change().abs()
@@ -101,11 +136,59 @@ def get_dynamic_threshold(close_series):
     return float(np.clip(median_move * 0.5, 0.003, 0.025))
 
 
-try:
-    print("🚀 v16.6 US AI·반도체 올인 방향성 통제소 가동...")
-    print("   [종목 교체: SOXL/TECL 제거 → AVGO/MU 추가]\n")
+# ============================================================
+# [개선 1] 레짐 전환 감지 피처
+# ============================================================
+def calculate_regime_features(df):
+    """
+    52주 신고가 갱신 빈도 + 단기/장기 추세 기울기 차이
+    구조적 재평가 중인 종목(MU, AVGO형)을 식별하는 핵심 피처
+    """
+    # 52주(약 252거래일) 신고가 갱신 빈도 — 최근 20일 중 신고가 비율
+    rolling_max_252 = df['Close'].rolling(252, min_periods=60).max()
+    is_new_high = (df['Close'] >= rolling_max_252 * 0.995).astype(int)
+    df['NewHigh_Freq_20D'] = is_new_high.rolling(20).mean()
 
-    event_warnings = check_upcoming_events()
+    # 단기추세(20일) vs 장기추세(120일) 기울기 — 선형회귀 대용으로 퍼센트 변화 사용
+    short_slope = df['Close'].pct_change(20)
+    long_slope = df['Close'].pct_change(120) / 6  # 120일을 20일 단위로 정규화
+    df['Trend_Accel'] = short_slope - long_slope  # 양수면 가속(레짐 전환), 음수면 둔화
+
+    # 최근 120일 누적 수익률 — GROWTH 카테고리 판별용
+    df['Ret_120D'] = df['Close'].pct_change(120)
+
+    return df
+
+
+def classify_category(ret_120d, ticker, leverage_tickers):
+    """
+    [개선 2, 4] 종목 카테고리 분류
+    - LEVERAGE: 레버리지 ETF (NVDL 등)
+    - GROWTH: 최근 120일 +50% 이상 상승한 구조적 재평가 종목
+    - STANDARD: 그 외 일반 종목
+    """
+    if ticker in leverage_tickers:
+        return 'LEVERAGE'
+    if pd.notna(ret_120d) and ret_120d >= 0.50:
+        return 'GROWTH'
+    return 'STANDARD'
+
+
+# 카테고리별 P/R 임계값 [개선 4]
+PR_THRESHOLDS = {
+    'GROWTH':   0.40,
+    'STANDARD': 0.48,
+    'LEVERAGE': 0.50,
+}
+
+LEVERAGE_TICKERS = {'NVDL'}
+
+
+try:
+    print("🚀 v16.7 US AI·반도체 올인 방향성 통제소 가동...")
+    print("   [개선: 레짐감지 | BB%이원화 | 실적이벤트오버라이드 | P/R카테고리별]\n")
+
+    event_warnings, event_detail = check_upcoming_events()
     prev_history = load_signal_history()
     today_history = {}
 
@@ -125,10 +208,9 @@ try:
     nasdaq_ma200 = macro_df['Nasdaq'].rolling(200).mean()
     nasdaq_ma200_gap = ((macro_df['Nasdaq'] / nasdaq_ma200) - 1).iloc[-1] * 100
 
-    # [종목 교체] SOXL, TECL 제거 → AVGO, MU 추가
     targets = ['XOVR', 'AVGO', 'NVDL', 'DXYZ', 'MU']
 
-    final_report = "🤖 [US AI·반도체 올인 방향성 통제소 v16.6]\n"
+    final_report = "🤖 [US AI·반도체 올인 방향성 통제소 v16.7]\n"
     final_report += "=" * 40 + "\n"
 
     if event_warnings:
@@ -168,7 +250,10 @@ try:
         bb_upper, bb_ma, bb_lower = calculate_bollinger(df['Close'])
         df['BB_Upper'] = bb_upper
         df['BB_Lower'] = bb_lower
-        df['BB_Pct'] = ((df['Close']-bb_lower)/(bb_upper-bb_lower).replace(0,np.nan))*100
+        df['BB_Pct'] = ((df['Close']-bb_lower)/(bb_upper-bb_lower).replace(0, np.nan))*100
+
+        # [개선 1] 레짐 전환 감지 피처
+        df = calculate_regime_features(df)
 
         current_price = df['Close'].iloc[-1]
         is_uptrend = current_price > df['EMA_20'].iloc[-1]
@@ -177,13 +262,21 @@ try:
         bb_lower_val = df['BB_Lower'].iloc[-1]
         bb_ma_val = bb_ma.iloc[-1]
         bb_pct = df['BB_Pct'].iloc[-1]
+        new_high_freq = df['NewHigh_Freq_20D'].iloc[-1]
+        trend_accel = df['Trend_Accel'].iloc[-1]
+        ret_120d = df['Ret_120D'].iloc[-1]
+
+        # [개선 2, 4] 카테고리 분류
+        category = classify_category(ret_120d, ticker, LEVERAGE_TICKERS)
+        min_pr = PR_THRESHOLDS[category]
 
         rsi_risk = max(0, latest_rsi - 68)
         atr_mult = max(1.0, 3.0 - (rsi_risk/10))
         stop_loss = max(current_price - (latest_atr*atr_mult), current_price*0.90)
 
         dyn_threshold = get_dynamic_threshold(df['Close'])
-        features = ['Nasdaq_Ret','SMH_Ret','VIX','TNX','RSI','MACD_Hist','Price_to_EMA20']
+        features = ['Nasdaq_Ret', 'SMH_Ret', 'VIX', 'TNX', 'RSI', 'MACD_Hist',
+                    'Price_to_EMA20', 'NewHigh_Freq_20D', 'Trend_Accel']
         df['Next_Ret'] = df['Close'].pct_change().shift(-1)
         latest_features = df[features].iloc[-1]
         df_train = df.dropna(subset=['Next_Ret']+features).copy()
@@ -204,7 +297,7 @@ try:
         scaler = StandardScaler()
         X_train_s = scaler.fit_transform(X.iloc[:split])
         X_test_s  = scaler.transform(X.iloc[split:])
-        X_latest  = scaler.transform(latest_features.values.reshape(1,-1))
+        X_latest  = scaler.transform(latest_features.values.reshape(1, -1))
 
         pos_ratio = y.iloc[:split].mean()
         neg_ratio = 1 - pos_ratio
@@ -217,26 +310,54 @@ try:
 
         preds_prob = (rf.predict_proba(X_test_s)+gb.predict_proba(X_test_s))/2
         preds = (preds_prob[:,1]>=0.5).astype(int)
-        f1 = f1_score(y.iloc[split:], preds, average='macro', zero_division=0)
+        f1   = f1_score(y.iloc[split:], preds, average='macro', zero_division=0)
         prec = precision_score(y.iloc[split:], preds, zero_division=0)
-        rec = recall_score(y.iloc[split:], preds, zero_division=0)
+        rec  = recall_score(y.iloc[split:], preds, zero_division=0)
 
-        MIN_F1, MIN_PR = 0.50, 0.48
-        pr_pass = (prec>=MIN_PR and rec>=MIN_PR)
-        f1_pass = (f1>=MIN_F1)
+        # [개선 4] 카테고리별 동적 P/R 임계값 적용
+        MIN_F1 = 0.50
+        pr_pass = (prec >= min_pr and rec >= min_pr)
+        f1_pass = (f1 >= MIN_F1)
+
+        # [개선 2] BB% 이원화 해석
+        if category == 'GROWTH' and bb_pct > 100:
+            bb_interpretation = "🚀 강세 추세 확인 (구조적 재평가 중 — 평균회귀 가정 미적용)"
+        elif bb_pct > 100:
+            bb_interpretation = "⚠️ 밴드 상단 돌파 (과매수 경계)"
+        elif bb_pct < 0:
+            bb_interpretation = "✅ 밴드 하단 이탈 (과매도 기회)"
+        else:
+            bb_interpretation = None
+
+        cat_label = {'GROWTH': '🚀구조적성장', 'STANDARD': '표준', 'LEVERAGE': '⚡레버리지'}[category]
+
+        # [개선 3] 실적 이벤트 오버라이드 — ML 판정 전에 먼저 출력
+        earnings_override = ""
+        if ticker in event_detail:
+            d_left = event_detail[ticker]['days_left']
+            consensus = event_detail[ticker]['consensus']
+            earnings_override = f"  * 📊 [실적 D-{d_left}] {consensus}\n"
 
         if not f1_pass or not pr_pass:
             fail = []
             if not f1_pass: fail.append(f"F1 {f1*100:.1f}%")
-            if not pr_pass: fail.append(f"P{prec*100:.0f}%/R{rec*100:.0f}% 미달")
+            if not pr_pass: fail.append(f"P{prec*100:.0f}%/R{rec*100:.0f}% 미달(기준{min_pr*100:.0f}%)")
             today_history[ticker] = {'signal':'관망','price':float(current_price),'rsi':float(latest_rsi)}
             flip_msg = detect_signal_flip(ticker, '관망', prev_history)
-            final_report += f"📌 {ticker}\n"
+
+            final_report += f"📌 {ticker} [{cat_label}]\n"
+            if earnings_override:
+                final_report += earnings_override
             final_report += f"  * ⚠️ 관망 ({' | '.join(fail)})\n"
-            if flip_msg: final_report += f"  * {flip_msg}\n"
+            if flip_msg:
+                final_report += f"  * {flip_msg}\n"
             final_report += f"  * 현재가: ${current_price:.2f} | 스탑로스: ${stop_loss:.2f}\n"
             final_report += f"  * BB 매수구간: ${bb_lower_val:.2f} ~ ${bb_ma_val:.2f}\n"
-            final_report += f"  * RSI: {latest_rsi:.1f} | BB%: {bb_pct:.0f}%\n"
+            final_report += f"  * RSI: {latest_rsi:.1f} | BB%: {bb_pct:.0f}%"
+            if bb_interpretation:
+                final_report += f" → {bb_interpretation}"
+            final_report += "\n"
+            final_report += f"  * 신고가빈도(20D): {new_high_freq*100:.0f}% | 추세가속도: {trend_accel*100:+.1f}%p\n"
             final_report += "-"*40 + "\n"
             continue
 
@@ -252,21 +373,28 @@ try:
         today_history[ticker] = {'signal':direction,'price':float(current_price),'rsi':float(latest_rsi)}
         flip_msg = detect_signal_flip(ticker, direction, prev_history)
 
-        final_report += f"📌 {ticker}\n"
+        final_report += f"📌 {ticker} [{cat_label}]\n"
+        if earnings_override:
+            final_report += earnings_override
         final_report += f"  * {direction} (상승 {up_prob:.1f}% / 하락 {down_prob:.1f}%)\n"
-        if flip_msg: final_report += f"  * {flip_msg}\n"
+        if flip_msg:
+            final_report += f"  * {flip_msg}\n"
         final_report += f"  * 현재가: ${current_price:.2f} | 스탑로스: ${stop_loss:.2f}\n"
         final_report += f"  * 📍매수 진입 타겟: ${entry_target:.2f} (BB하단 ${bb_lower_val:.2f})\n"
-        final_report += f"  * F1 {f1*100:.1f}% | P {prec*100:.0f}% | R {rec*100:.0f}%\n"
-        final_report += f"  * RSI: {latest_rsi:.1f} | BB%: {bb_pct:.0f}% | 추세: {'🟢' if is_uptrend else '🔴'}\n"
+        final_report += f"  * F1 {f1*100:.1f}% | P {prec*100:.0f}% | R {rec*100:.0f}% (기준P/R {min_pr*100:.0f}%)\n"
+        final_report += f"  * RSI: {latest_rsi:.1f} | BB%: {bb_pct:.0f}%"
+        if bb_interpretation:
+            final_report += f" → {bb_interpretation}"
+        final_report += f" | 추세: {'🟢' if is_uptrend else '🔴'}\n"
+        final_report += f"  * 신고가빈도(20D): {new_high_freq*100:.0f}% | 추세가속도: {trend_accel*100:+.1f}%p\n"
         final_report += "-"*40 + "\n"
 
     final_report += f"\n📊 나스닥 MA200 이격: {nasdaq_ma200_gap:+.1f}% (시장 국면 참고용)\n"
     save_signal_history(today_history)
 
-    print("\n"+final_report)
+    print("\n" + final_report)
     send_telegram_message(final_report)
-    print("✅ v16.6 리포트 전송 완료")
+    print("✅ v16.7 리포트 전송 완료")
 
 except Exception as e:
     error_msg = f"🚨 에러:\n{traceback.format_exc()[:800]}"
