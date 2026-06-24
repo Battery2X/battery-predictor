@@ -149,6 +149,7 @@ try:
         # [수정 3] 시계열 교차 검증 (TimeSeriesSplit) 및 모델 훈련
         tscv = TimeSeriesSplit(n_splits=3)
         rf = RandomForestClassifier(n_estimators=200, random_state=42, max_depth=5, class_weight='balanced')
+        # [수정 4] 빠르고 결측치/노이즈에 강한 HistGradientBoosting 도입
         hgb = HistGradientBoostingClassifier(max_iter=200, random_state=42, max_depth=4, learning_rate=0.05)
         
         avg_f1, avg_prec, avg_rec = 0, 0, 0
