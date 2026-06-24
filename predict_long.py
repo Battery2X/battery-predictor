@@ -58,16 +58,16 @@ try:
             if series.index.tz is not None:
                 series.index = series.index.tz_localize(None)
             macro_data[name] = series
-            
+
     macro_df = pd.DataFrame(macro_data).ffill().dropna()
-    macro_df = macro_df - macro_df
-    macro_df = macro_df['Nasdaq'].pct_change(60)
+    macro_df['Nasdaq_Ret60'] = macro_df['Nasdaq'].pct_change(60)
     macro_df['VIX_EMA20'] = macro_df['VIX'].ewm(span=20,adjust=False).mean()
     macro_df['VIX_Level'] = macro_df['VIX']
     nasdaq_ma200 = macro_df['Nasdaq'].rolling(200).mean()
     macro_df['Nasdaq_MA200_Gap'] = (macro_df['Nasdaq']/nasdaq_ma200) - 1
 
-    targets =
+    # LEVERAGE_META에 등록된 종목 전부를 대상으로 사용
+    targets = list(LEVERAGE_META.keys())
     final_report = "🦅\n"
     final_report += "📅 분석 기준: 향후 20영업일 대세 상승 확률\n"
     final_report += "=" * 40 + "\n"
@@ -92,23 +92,26 @@ try:
             df.index = df.index.tz_localize(None)
         df = df.join(macro_df, how='left').ffill().dropna()
 
-        df = calculate_rsi(df['Close'], period=70)
-        df = np.log(df['Close']/df['Close'].shift(1))
-        df = np.log(df['Close']/df['Close'].shift(60))
-        df = (df-df.rolling(120).mean())/(df.rolling(120).std()+1e-9)
-        df['Vol_20'] = df.rolling(20).std()*np.sqrt(252)
-        df = df['Close'].shift(-20)
-        df = (df/df['Close']) - 1
+        df['RSI_70'] = calculate_rsi(df['Close'], period=70)
+        df['LogRet_1'] = np.log(df['Close']/df['Close'].shift(1))
+        df['LogRet_60'] = np.log(df['Close']/df['Close'].shift(60))
+        df['Ret60_Z'] = (df['LogRet_60']-df['LogRet_60'].rolling(120).mean())/(df['LogRet_60'].rolling(120).std()+1e-9)
+        df['Vol_20'] = df['LogRet_1'].rolling(20).std()*np.sqrt(252)
+        df['Future_Close'] = df['Close'].shift(-20)
+        df['Target_Ret'] = (df['Future_Close']/df['Close']) - 1
 
-        features =
+        features = [
+            'RSI_70', 'LogRet_1', 'LogRet_60', 'Ret60_Z', 'Vol_20',
+            'Nasdaq_Ret60', 'VIX_EMA20', 'VIX_Level', 'Nasdaq_MA200_Gap'
+        ]
         latest_features = df[features].iloc[-1]
         current_price = df['Close'].iloc[-1]
-        latest_rsi_w = df.iloc[-1]
-        ret_60d_z = df.iloc[-1]
+        latest_rsi_w = df['RSI_70'].iloc[-1]
+        ret_60d_z = df['Ret60_Z'].iloc[-1]
         current_vol = df['Vol_20'].iloc[-1]
 
-        df_train = df.dropna(subset=+features).copy()
-        df_train = np.where(df_train>threshold, 1, 0)
+        df_train = df.dropna(subset=['Target_Ret'] + features).copy()
+        df_train['Target'] = np.where(df_train['Target_Ret'] > threshold, 1, 0)
 
         MIN_LONG_ROWS = 400
         if len(df_train) < MIN_LONG_ROWS:
@@ -116,10 +119,10 @@ try:
             continue
 
         X = df_train[features].values
-        y = df_train.values
+        y = df_train['Target'].values
         scaler = StandardScaler()
         tscv = TimeSeriesSplit(n_splits=3)
-        f1_folds, prec_folds, rec_folds =,,
+        f1_folds, prec_folds, rec_folds = [], [], []
         last_rf = last_gb = last_scaler = None
 
         for fold_idx, (tr_idx, te_idx) in enumerate(tscv.split(X)):
@@ -151,7 +154,7 @@ try:
 
         X_latest = last_scaler.transform(latest_features.values.reshape(1,-1))
         final_probs = (last_rf.predict_proba(X_latest)+last_gb.predict_proba(X_latest))/2
-        up_prob = final_probs*100
+        up_prob = final_probs[0][1]*100
 
         ma200_gap = macro_df['Nasdaq_MA200_Gap'].iloc[-1]
         regime = f"🟢 강세장 ({ma200_gap*100:+.1f}%)" if ma200_gap>0.05 else (f"🔴 약세장 ({ma200_gap*100:+.1f}%)" if ma200_gap<-0.05 else f"🟡 중립 ({ma200_gap*100:+.1f}%)")
