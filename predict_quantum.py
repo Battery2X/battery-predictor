@@ -50,12 +50,14 @@ try:
     macro_tickers = {'Nasdaq':'^IXIC','VIX':'^VIX','TNX':'^TNX'}
     macro_raw = {}
     for name, t in macro_tickers.items():
+        # yfinance 다중 인덱스 오류 방지 옵션 추가
         df_raw = yf.download(t, start=start_date, progress=False, multi_level_index=False)
         if not df_raw.empty:
             series = df_raw['Close'].squeeze()
             if series.index.tz is not None:
                 series.index = series.index.tz_localize(None)
             macro_raw[name] = series
+            
     macro_base = pd.DataFrame(macro_raw).ffill().dropna()
 
     # [종목 제거] QBTS, RGTI 제거
@@ -65,6 +67,7 @@ try:
     final_report += "=" * 40 + "\n"
 
     for ticker in quantum_targets:
+        # yfinance 다중 인덱스 오류 방지 옵션 추가
         tgt_data = yf.download(ticker, start=start_date, progress=False, multi_level_index=False)
         if tgt_data.empty:
             final_report += f"📌 {ticker}\n  * ⚠️ 데이터 수집 불가\n" + "-"*40 + "\n"
@@ -120,7 +123,8 @@ try:
         class_ratio = df_train.mean()
         disp_threshold = get_disparity_threshold(df_train)
 
-        X = df_train[features]; y = df_train
+        X = df_train[features]
+        y = df_train
         split = int(len(X)*0.8)
         scaler = StandardScaler()
         X_train_s = scaler.fit_transform(X.iloc[:split])
