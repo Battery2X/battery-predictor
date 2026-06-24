@@ -45,28 +45,30 @@ LEVERAGE_META = {
 
 try:
     print("🚀 v17.3 US AI·반도체 올인 '장기 매크로 통제소' 가동...")
-    print("   [종목 교체: SOXL/TECL 제거 → AVGO/MU 추가]\n")
+    print("  \n")
 
     start_date = '2021-01-01'
     macro_tickers = {'Nasdaq':'^IXIC','SMH':'SMH','VIX':'^VIX','TNX':'^TNX','IRX':'^IRX'}
     macro_data = {}
     for name, t in macro_tickers.items():
-        df_raw = yf.download(t, start=start_date, progress=False)
+        # yfinance 다중 인덱스 오류 방지 옵션 추가
+        df_raw = yf.download(t, start=start_date, progress=False, multi_level_index=False)
         if not df_raw.empty:
             series = df_raw['Close'].squeeze()
             if series.index.tz is not None:
                 series.index = series.index.tz_localize(None)
             macro_data[name] = series
+            
     macro_df = pd.DataFrame(macro_data).ffill().dropna()
-    macro_df['Yield_Curve'] = macro_df['TNX'] - macro_df['IRX']
-    macro_df['Nasdaq_3M_Ret'] = macro_df['Nasdaq'].pct_change(60)
+    macro_df = macro_df - macro_df
+    macro_df = macro_df['Nasdaq'].pct_change(60)
     macro_df['VIX_EMA20'] = macro_df['VIX'].ewm(span=20,adjust=False).mean()
     macro_df['VIX_Level'] = macro_df['VIX']
     nasdaq_ma200 = macro_df['Nasdaq'].rolling(200).mean()
     macro_df['Nasdaq_MA200_Gap'] = (macro_df['Nasdaq']/nasdaq_ma200) - 1
 
-    targets = ['XOVR', 'AVGO', 'NVDL', 'DXYZ', 'MU']
-    final_report = "🦅 [US AI·반도체 올인 '장기' 매크로 통제소 v17.3]\n"
+    targets =
+    final_report = "🦅\n"
     final_report += "📅 분석 기준: 향후 20영업일 대세 상승 확률\n"
     final_report += "=" * 40 + "\n"
 
@@ -75,7 +77,8 @@ try:
         threshold = meta['threshold']
         lev_label = meta['label']
 
-        tgt_data = yf.download(ticker, start=start_date, progress=False)
+        # yfinance 다중 인덱스 오류 방지 옵션 추가
+        tgt_data = yf.download(ticker, start=start_date, progress=False, multi_level_index=False)
         if tgt_data.empty:
             final_report += f"⚠️ {ticker}: 데이터 수집 불가\n" + "-"*40 + "\n"
             continue
@@ -89,23 +92,23 @@ try:
             df.index = df.index.tz_localize(None)
         df = df.join(macro_df, how='left').ffill().dropna()
 
-        df['RSI_Weekly'] = calculate_rsi(df['Close'], period=70)
-        df['Log_Ret'] = np.log(df['Close']/df['Close'].shift(1))
-        df['Ret_60D'] = np.log(df['Close']/df['Close'].shift(60))
-        df['Ret_60D_Z'] = (df['Ret_60D']-df['Ret_60D'].rolling(120).mean())/(df['Ret_60D'].rolling(120).std()+1e-9)
-        df['Vol_20'] = df['Log_Ret'].rolling(20).std()*np.sqrt(252)
-        df['Future_20D'] = df['Close'].shift(-20)
-        df['Future_Ret'] = (df['Future_20D']/df['Close']) - 1
+        df = calculate_rsi(df['Close'], period=70)
+        df = np.log(df['Close']/df['Close'].shift(1))
+        df = np.log(df['Close']/df['Close'].shift(60))
+        df = (df-df.rolling(120).mean())/(df.rolling(120).std()+1e-9)
+        df['Vol_20'] = df.rolling(20).std()*np.sqrt(252)
+        df = df['Close'].shift(-20)
+        df = (df/df['Close']) - 1
 
-        features = ['Yield_Curve','Nasdaq_3M_Ret','VIX_EMA20','VIX_Level','RSI_Weekly','Ret_60D_Z','Vol_20','Nasdaq_MA200_Gap']
+        features =
         latest_features = df[features].iloc[-1]
         current_price = df['Close'].iloc[-1]
-        latest_rsi_w = df['RSI_Weekly'].iloc[-1]
-        ret_60d_z = df['Ret_60D_Z'].iloc[-1]
+        latest_rsi_w = df.iloc[-1]
+        ret_60d_z = df.iloc[-1]
         current_vol = df['Vol_20'].iloc[-1]
 
-        df_train = df.dropna(subset=['Future_Ret']+features).copy()
-        df_train['Target'] = np.where(df_train['Future_Ret']>threshold, 1, 0)
+        df_train = df.dropna(subset=+features).copy()
+        df_train = np.where(df_train>threshold, 1, 0)
 
         MIN_LONG_ROWS = 400
         if len(df_train) < MIN_LONG_ROWS:
@@ -113,10 +116,10 @@ try:
             continue
 
         X = df_train[features].values
-        y = df_train['Target'].values
+        y = df_train.values
         scaler = StandardScaler()
         tscv = TimeSeriesSplit(n_splits=3)
-        f1_folds, prec_folds, rec_folds = [], [], []
+        f1_folds, prec_folds, rec_folds =,,
         last_rf = last_gb = last_scaler = None
 
         for fold_idx, (tr_idx, te_idx) in enumerate(tscv.split(X)):
@@ -148,7 +151,7 @@ try:
 
         X_latest = last_scaler.transform(latest_features.values.reshape(1,-1))
         final_probs = (last_rf.predict_proba(X_latest)+last_gb.predict_proba(X_latest))/2
-        up_prob = final_probs[0][1]*100
+        up_prob = final_probs*100
 
         ma200_gap = macro_df['Nasdaq_MA200_Gap'].iloc[-1]
         regime = f"🟢 강세장 ({ma200_gap*100:+.1f}%)" if ma200_gap>0.05 else (f"🔴 약세장 ({ma200_gap*100:+.1f}%)" if ma200_gap<-0.05 else f"🟡 중립 ({ma200_gap*100:+.1f}%)")
