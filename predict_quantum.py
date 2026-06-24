@@ -44,28 +44,31 @@ def get_disparity_threshold(disparity_series):
 
 try:
     print("🔮 [v1.4] 양자컴퓨팅 리스크 관리 엔진 가동...")
-    print("   [종목 제거: QBTS, RGTI — 만성적 매매보류로 모델 가치 낮음]\n")
+    print("  \n")
 
     start_date = '2021-01-01'
     macro_tickers = {'Nasdaq':'^IXIC','VIX':'^VIX','TNX':'^TNX'}
     macro_raw = {}
     for name, t in macro_tickers.items():
-        df_raw = yf.download(t, start=start_date, progress=False)
+        # yfinance 다중 인덱스 오류 방지 옵션 추가
+        df_raw = yf.download(t, start=start_date, progress=False, multi_level_index=False)
         if not df_raw.empty:
             series = df_raw['Close'].squeeze()
             if series.index.tz is not None:
                 series.index = series.index.tz_localize(None)
             macro_raw[name] = series
+            
     macro_base = pd.DataFrame(macro_raw).ffill().dropna()
 
     # [종목 제거] QBTS, RGTI 제거
     quantum_targets = ['IONQ', 'INFQ']
 
-    final_report = "⚛️ [QUANTUM 양자컴퓨팅 리스크 관리 통제소 v1.4]\n"
+    final_report = "⚛️\n"
     final_report += "=" * 40 + "\n"
 
     for ticker in quantum_targets:
-        tgt_data = yf.download(ticker, start=start_date, progress=False)
+        # yfinance 다중 인덱스 오류 방지 옵션 추가
+        tgt_data = yf.download(ticker, start=start_date, progress=False, multi_level_index=False)
         if tgt_data.empty:
             final_report += f"📌 {ticker}\n  * ⚠️ 데이터 수집 불가\n" + "-"*40 + "\n"
             continue
@@ -77,8 +80,8 @@ try:
             lookahead, window_name, min_rows = 20, "1개월 (20영업일 뒤)", 60
 
         macro_df = macro_base.copy()
-        macro_df['Macro_Ret'] = macro_df['Nasdaq'].pct_change(lookahead)
-        macro_df['TNX_Diff'] = macro_df['TNX'].diff(lookahead)
+        macro_df = macro_df['Nasdaq'].pct_change(lookahead)
+        macro_df = macro_df.diff(lookahead)
         macro_df['VIX_Mean'] = macro_df['VIX'].rolling(lookahead).mean()
         nasdaq_ma200 = macro_df['Nasdaq'].rolling(200).mean()
         macro_df['Nasdaq_MA200_Gap'] = (macro_df['Nasdaq']/nasdaq_ma200) - 1
@@ -94,33 +97,33 @@ try:
         df = df.join(macro_df, how='left').ffill().dropna()
 
         rsi_period = max(14, int(lookahead*0.7))
-        df['RSI_Target'] = calculate_rsi(df['Close'], period=rsi_period)
-        df['MA_Target'] = df['Close'].rolling(lookahead).mean()
-        df['Disparity_Target'] = (df['Close']/df['MA_Target']) - 1
-        df['Log_Ret'] = np.log(df['Close']/df['Close'].shift(1))
-        df['Vol_Target'] = df['Log_Ret'].rolling(lookahead).std()*np.sqrt(252)
+        df = calculate_rsi(df['Close'], period=rsi_period)
+        df = df['Close'].rolling(lookahead).mean()
+        df = (df['Close']/df) - 1
+        df = np.log(df['Close']/df['Close'].shift(1))
+        df = df.rolling(lookahead).std()*np.sqrt(252)
         df['Future_Close'] = df['Close'].shift(-lookahead)
-        df['Future_Ret'] = (df['Future_Close']/df['Close']) - 1
+        df = (df['Future_Close']/df['Close']) - 1
 
-        features = ['Macro_Ret','TNX_Diff','VIX_Mean','RSI_Target','Disparity_Target','Vol_Target','Nasdaq_MA200_Gap']
+        features =
         latest_features = df[features].iloc[-1]
         current_price = df['Close'].iloc[-1]
-        disp_target = df['Disparity_Target'].iloc[-1]
-        ma_target_val = df['MA_Target'].iloc[-1]
+        disp_target = df.iloc[-1]
+        ma_target_val = df.iloc[-1]
 
-        df_train = df.dropna(subset=['Future_Ret']+features).copy()
+        df_train = df.dropna(subset=+features).copy()
         if len(df_train) < min_rows:
             final_report += f"📌 {ticker} ({window_name})\n"
             final_report += f"  * ⚠️ 학습 데이터 부족 ({len(df_train)}행 / 최소 {min_rows}행)\n"
             final_report += "-"*40 + "\n"
             continue
 
-        dyn_threshold = get_dynamic_threshold(df_train['Future_Ret'], target_ratio=0.30)
-        df_train['Target'] = np.where(df_train['Future_Ret']>dyn_threshold, 1, 0)
-        class_ratio = df_train['Target'].mean()
-        disp_threshold = get_disparity_threshold(df_train['Disparity_Target'])
+        dyn_threshold = get_dynamic_threshold(df_train, target_ratio=0.30)
+        df_train = np.where(df_train>dyn_threshold, 1, 0)
+        class_ratio = df_train.mean()
+        disp_threshold = get_disparity_threshold(df_train)
 
-        X = df_train[features]; y = df_train['Target']
+        X = df_train[features]; y = df_train
         split = int(len(X)*0.8)
         scaler = StandardScaler()
         X_train_s = scaler.fit_transform(X.iloc[:split])
@@ -143,8 +146,8 @@ try:
         prec = precision_score(y.iloc[split:], preds, zero_division=0)
         rec = recall_score(y.iloc[split:], preds, zero_division=0)
 
-        rf_up = rf.predict_proba(X_latest)[0][1]
-        gb_up = gb.predict_proba(X_latest)[0][1]
+        rf_up = rf.predict_proba(X_latest)
+        gb_up = gb.predict_proba(X_latest)
         up_prob = ((rf_up+gb_up)/2)*100
 
         MIN_F1 = 0.50
