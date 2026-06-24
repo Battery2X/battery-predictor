@@ -32,7 +32,7 @@ MARKET_EVENTS = {
 def check_upcoming_events():
     from datetime import datetime
     today = datetime.now().date()
-    out, out_detail = [], {}
+    out, out_detail =, {}
     for date_str, info in MARKET_EVENTS.items():
         ev_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         days_left = (ev_date - today).days
@@ -61,21 +61,21 @@ def calculate_advanced_features(df):
     """v17.0 신규 피처: 구조적 재평가 장세 맞춤형"""
     # 1. 기존 레짐 감지 피처
     rolling_max_252 = df['Close'].rolling(252, min_periods=60).max()
-    df['NewHigh_Freq_20D'] = (df['Close'] >= rolling_max_252 * 0.995).astype(int).rolling(20).mean()
+    df = (df['Close'] >= rolling_max_252 * 0.995).astype(int).rolling(20).mean()
     
     short_slope = df['Close'].pct_change(20)
     long_slope = df['Close'].pct_change(120) / 6
-    df['Trend_Accel'] = short_slope - long_slope
-    df['Ret_120D'] = df['Close'].pct_change(120)
+    df = short_slope - long_slope
+    df = df['Close'].pct_change(120)
 
     # 2. [신규] 반도체 섹터(SMH) 대비 상대 강도 (Relative Strength)
     if 'SMH' in df.columns:
-        df['Relative_Strength_SMH'] = df['Close'].pct_change(20) - df['SMH'].pct_change(20)
+        df = df['Close'].pct_change(20) - df.pct_change(20)
     else:
-        df['Relative_Strength_SMH'] = 0
+        df = 0
 
     # 3. [신규] 옵션 시장 내재 변동성 대용치 (Historical Volatility 연율화)
-    df['Hist_Vol_20D'] = df['Close'].pct_change().rolling(20).std() * np.sqrt(252)
+    df = df['Close'].pct_change().rolling(20).std() * np.sqrt(252)
     
     return df
 
@@ -87,17 +87,16 @@ try:
     macro_tickers = {'Nasdaq': '^IXIC', 'SMH': 'SMH', 'VIX': '^VIX', 'TNX': '^TNX'}
     macro_data = {}
     for name, t in macro_tickers.items():
-        # yfinance 업데이트에 따른 멀티 인덱스 오류 방지 옵션 추가
         df_raw = yf.download(t, start=start_date, progress=False, multi_level_index=False)
         if not df_raw.empty:
             macro_data[name] = df_raw['Close'].squeeze()
             
     macro_df = pd.DataFrame(macro_data).ffill().dropna()
-    macro_df['Nasdaq_Ret'] = macro_df['Nasdaq'].pct_change()
-    macro_df['SMH_Ret'] = macro_df['SMH'].pct_change()
+    macro_df = macro_df['Nasdaq'].pct_change()
+    macro_df = macro_df.pct_change()
 
-    targets = ['AVGO', 'NVDL', 'MU']
-    final_report = "🤖 [US AI·반도체 통제소 v17.0 - 모델 고도화 적용]\n" + "=" * 40 + "\n"
+    targets =
+    final_report = "🤖\n" + "=" * 40 + "\n"
 
     if event_warnings:
         final_report += "📅 [이벤트 경고]\n"
@@ -106,7 +105,6 @@ try:
         final_report += "=" * 40 + "\n"
 
     for ticker in targets:
-        # yfinance 업데이트에 따른 멀티 인덱스 오류 방지 옵션 추가
         tgt_data = yf.download(ticker, start=start_date, progress=False, multi_level_index=False)
         if tgt_data.empty: continue
 
@@ -118,14 +116,14 @@ try:
         df = df.join(macro_df, how='left').ffill().dropna()
 
         # 기술적 지표 생성
-        df['RSI'] = calculate_rsi(df['Close'])
+        df = calculate_rsi(df['Close'])
         macd_line = df['Close'].ewm(span=12, adjust=False).mean() - df['Close'].ewm(span=26, adjust=False).mean()
-        df['MACD_Hist'] = macd_line - macd_line.ewm(span=9, adjust=False).mean()
+        df = macd_line - macd_line.ewm(span=9, adjust=False).mean()
         df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
         df['Price_to_EMA20'] = (df['Close'] / df['EMA_20']) - 1
         
         bb_upper, bb_ma, bb_lower = calculate_bollinger(df['Close'])
-        df['BB_Pct'] = ((df['Close']-bb_lower)/(bb_upper-bb_lower).replace(0, np.nan))*100
+        df = ((df['Close']-bb_lower)/(bb_upper-bb_lower).replace(0, np.nan))*100
 
         # 특화 피처 생성
         df = calculate_advanced_features(df)
@@ -134,26 +132,23 @@ try:
         rolling_median_ret = df['Close'].pct_change().abs().rolling(window=60, min_periods=20).median()
         dyn_threshold_series = np.clip(rolling_median_ret * 0.5, 0.003, 0.025)
         
-        df['Next_Ret'] = df['Close'].pct_change().shift(-1)
-        df['Target'] = np.where(df['Next_Ret'] > dyn_threshold_series, 1, 0)
+        df = df['Close'].pct_change().shift(-1)
+        df = np.where(df > dyn_threshold_series, 1, 0)
 
         # 훈련 데이터 준비
-        features = ['Nasdaq_Ret', 'SMH_Ret', 'VIX', 'TNX', 'RSI', 'MACD_Hist',
-                    'Price_to_EMA20', 'NewHigh_Freq_20D', 'Trend_Accel', 
-                    'Relative_Strength_SMH', 'Hist_Vol_20D']
+        features =
         
-        df_train = df.dropna(subset=['Next_Ret'] + features).copy()
+        df_train = df.dropna(subset= + features).copy()
         
         if len(df_train) < 300:
             continue
 
         X = df_train[features]
-        y = df_train['Target']
+        y = df_train
         
         # [수정 3] 시계열 교차 검증 (TimeSeriesSplit) 및 모델 훈련
         tscv = TimeSeriesSplit(n_splits=3)
         rf = RandomForestClassifier(n_estimators=200, random_state=42, max_depth=5, class_weight='balanced')
-        # [수정 4] 빠르고 결측치/노이즈에 강한 HistGradientBoosting 도입
         hgb = HistGradientBoostingClassifier(max_iter=200, random_state=42, max_depth=4, learning_rate=0.05)
         
         avg_f1, avg_prec, avg_rec = 0, 0, 0
@@ -190,7 +185,7 @@ try:
         X_latest = scaler_final.transform(latest_features)
         
         final_probs = (rf.predict_proba(X_latest) + hgb.predict_proba(X_latest)) / 2
-        up_prob, down_prob = final_probs[0][1]*100, final_probs[0][0]*100
+        up_prob, down_prob = final_probs*100, final_probs*100
 
         if up_prob >= 65: direction = "🟢 강한 상승 추세"
         elif up_prob >= 50: direction = "🟡 약한 상승 추세"
@@ -198,8 +193,8 @@ try:
         else: direction = "🟠 하락 우세"
 
         current_price = df['Close'].iloc[-1]
-        volatility = df['Hist_Vol_20D'].iloc[-1]
-        rel_strength = df['Relative_Strength_SMH'].iloc[-1]
+        volatility = df.iloc[-1]
+        rel_strength = df.iloc[-1]
 
         final_report += f"📌 {ticker} 분석 결과\n"
         if ticker in event_detail:
