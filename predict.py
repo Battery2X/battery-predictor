@@ -87,6 +87,7 @@ try:
     macro_tickers = {'Nasdaq': '^IXIC', 'SMH': 'SMH', 'VIX': '^VIX', 'TNX': '^TNX'}
     macro_data = {}
     for name, t in macro_tickers.items():
+        # yfinance 업데이트에 따른 멀티 인덱스 오류 방지 옵션 추가
         df_raw = yf.download(t, start=start_date, progress=False, multi_level_index=False)
         if not df_raw.empty:
             macro_data[name] = df_raw['Close'].squeeze()
@@ -105,6 +106,7 @@ try:
         final_report += "=" * 40 + "\n"
 
     for ticker in targets:
+        # yfinance 업데이트에 따른 멀티 인덱스 오류 방지 옵션 추가
         tgt_data = yf.download(ticker, start=start_date, progress=False, multi_level_index=False)
         if tgt_data.empty: continue
 
