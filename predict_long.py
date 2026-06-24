@@ -51,12 +51,14 @@ try:
     macro_tickers = {'Nasdaq':'^IXIC','SMH':'SMH','VIX':'^VIX','TNX':'^TNX','IRX':'^IRX'}
     macro_data = {}
     for name, t in macro_tickers.items():
+        # yfinance 다중 인덱스 오류 방지 옵션 추가
         df_raw = yf.download(t, start=start_date, progress=False, multi_level_index=False)
         if not df_raw.empty:
             series = df_raw['Close'].squeeze()
             if series.index.tz is not None:
                 series.index = series.index.tz_localize(None)
             macro_data[name] = series
+            
     macro_df = pd.DataFrame(macro_data).ffill().dropna()
     macro_df = macro_df - macro_df
     macro_df = macro_df['Nasdaq'].pct_change(60)
@@ -75,6 +77,7 @@ try:
         threshold = meta['threshold']
         lev_label = meta['label']
 
+        # yfinance 다중 인덱스 오류 방지 옵션 추가
         tgt_data = yf.download(ticker, start=start_date, progress=False, multi_level_index=False)
         if tgt_data.empty:
             final_report += f"⚠️ {ticker}: 데이터 수집 불가\n" + "-"*40 + "\n"
