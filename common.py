@@ -1,6 +1,16 @@
 """
-common.py — 레버리지/인버스 ETF 방향성 예측 시스템 공통 모듈 (v20.0)
+common.py — 레버리지/인버스 ETF 방향성 예측 시스템 공통 모듈 (v22.0)
 predict_scalp.py / predict_swing.py / predict_position.py 가 공유한다.
+
+v22.0 핵심 변경: "벤치마크 중심" 구조로 전환
+------------------------------------------------
+기존(v21.0)에는 TQQQ/SQQQ, SOXL/SOXS, SPXL/SPXS를 각각 독립 모델로 학습시켰다.
+같은 지수를 반대로 추종하는 페어인데도 서로 다른 노이즈로 학습되다 보니,
+"TQQQ 하락 우세 + SQQQ도 하락 우세" 같은 논리적으로 불가능한 조합이 나올 수 있었다.
+
+v22.0에서는 벤치마크(QQQ/SMH/SPY) 방향성을 딱 한 번만 예측하고,
+그 확률을 페어의 롱 상품에는 그대로, 인버스 상품에는 반전(up<->down)해서
+적용한다. 이러면 정의상 페어 모순이 나올 수 없다.
 """
 import os
 import requests
@@ -11,24 +21,25 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ============================================================
-# 1) 커버 종목 메타데이터 — 지수 계열별 레버리지/인버스 3쌍
+# 1) 커버 종목 메타데이터
 # ============================================================
-# benchmark_ticker: yfinance에서 받아올 실제 벤치마크 시세 티커
 LEVERAGE_UNIVERSE = {
-    # --- 나스닥100 계열 ---
     'TQQQ': {'multiplier': 3, 'direction': +1, 'benchmark': 'QQQ', 'family': 'Nasdaq100', 'desc': '나스닥100 +3배'},
     'SQQQ': {'multiplier': 3, 'direction': -1, 'benchmark': 'QQQ', 'family': 'Nasdaq100', 'desc': '나스닥100 -3배'},
-    # --- 반도체(SOX) 계열 ---
     'SOXL': {'multiplier': 3, 'direction': +1, 'benchmark': 'SMH', 'family': 'Semiconductor', 'desc': '반도체 +3배'},
     'SOXS': {'multiplier': 3, 'direction': -1, 'benchmark': 'SMH', 'family': 'Semiconductor', 'desc': '반도체 -3배'},
-    # --- S&P500 계열 ---
     'SPXL': {'multiplier': 3, 'direction': +1, 'benchmark': 'SPY', 'family': 'SP500', 'desc': 'S&P500 +3배'},
     'SPXS': {'multiplier': 3, 'direction': -1, 'benchmark': 'SPY', 'family': 'SP500', 'desc': 'S&P500 -3배'},
 }
 
+# 모델을 학습시킬 벤치마크(기초지수) 목록 — 이 3개에 대해서만 방향성을 예측한다
+BENCHMARK_TICKERS = ['QQQ', 'SMH', 'SPY']
+
+# 각 벤치마크를 상대강도 비교할 대상. SPY 자신은 비교 대상이 없으므로 None
+REL_COMPARISON = {'QQQ': 'SPY', 'SMH': 'SPY', 'SPY': None}
+
 MACRO_TICKERS = {'QQQ': 'QQQ', 'SMH': 'SMH', 'SPY': 'SPY', 'VIX': '^VIX', 'TNX': '^TNX'}
 
-# 매크로 이벤트 캘린더 — 세 스크립트가 공통으로 참조
 MARKET_EVENTS = {
     "2026-07-29": {"desc": "FOMC 금리 결정 (한국시간 7/30 오전 3시 발표)",
                    "consensus": "동결 vs 25bp 인상 확률 팽팽 (동결 62~70%, 인상 25~30%)"},
@@ -105,7 +116,7 @@ def _stochastic_k(df, period=14):
 
 
 def build_features(df, benchmark_col):
-    """호라이즌에 무관하게 공통으로 쓰는 피처셋."""
+    """benchmark_col이 None이거나 df에 없으면 상대강도 피처는 0으로 처리된다."""
     df['RSI'] = _rsi(df['Close'])
     macd_line = df['Close'].ewm(span=12, adjust=False).mean() - df['Close'].ewm(span=26, adjust=False).mean()
     df['MACD_Hist'] = macd_line - macd_line.ewm(span=9, adjust=False).mean()
@@ -128,13 +139,11 @@ def build_features(df, benchmark_col):
     df['StochK'] = _stochastic_k(df)
     df['HistVol20'] = df['Close'].pct_change().rolling(20).std() * np.sqrt(252)
 
-    # 벤치마크 대비 20일 상대 모멘텀 (leakage 아님: 과거값만 사용)
-    if benchmark_col in df.columns:
+    if benchmark_col and benchmark_col in df.columns:
         df['RelBenchmark20'] = df['Close'].pct_change(20) - df[benchmark_col].pct_change(20)
     else:
         df['RelBenchmark20'] = 0
 
-    # 매크로 레짐: VIX 수준/변화, 금리(TNX) 변화
     if 'VIX' in df.columns:
         df['VIX_level'] = df['VIX']
         df['VIX_chg5'] = df['VIX'].pct_change(5)
@@ -153,26 +162,9 @@ FEATURE_COLUMNS = [
 
 
 # ============================================================
-# 4) 타겟 생성 (호라이즌별로 파라미터만 다르게)
+# 4) 타겟 생성 — 대칭 3구간(상승/하락/횡보), 횡보는 학습 제외
 # ============================================================
 def build_target(df, horizon_days, threshold_cap):
-    """
-    v21.0 재설계: 대칭적 3구간(상승/하락/횡보) + 횡보(dead-zone)는 학습에서 제외.
-
-    기존 방식("수익률 > 임계값 → 1, 아니면 0")은 하락·횡보·작은 상승이
-    전부 0으로 뭉쳐서, down_prob이 "하락 확률"이 아니라 "큰 상승이 아닐 확률"이
-    되어버리는 문제가 있었다 (TQQQ·SQQQ 같은 완전 반대 상품이 동시에
-    "하락 우세"로 나오는 모순이 이 때문에 발생).
-
-    이제는:
-      - Target_Ret > +임계값  → 1 (상승)
-      - Target_Ret < -임계값  → 0 (하락)
-      - 그 사이(횡보)         → NaN (학습/추론 대상에서 제외)
-    이렇게 대칭 구간으로 나눠서, 모델이 "상승 vs 하락"을 명확히 구분하도록 한다.
-    단, 이 확률은 "유의미한 방향성 움직임이 발생했을 때 그 방향이 상승일 확률"을
-    의미하며, "그런 움직임 자체가 일어날 확률"까지 알려주지는 않는다는 점은
-    리포트에서 함께 안내한다.
-    """
     rolling_median_ret = df['Close'].pct_change().abs().rolling(window=60, min_periods=20).median()
     dyn_threshold = np.clip(rolling_median_ret * 0.5 * np.sqrt(horizon_days), 0.003, threshold_cap)
     df['Target_Ret'] = df['Close'].pct_change(horizon_days).shift(-horizon_days)
@@ -183,12 +175,27 @@ def build_target(df, horizon_days, threshold_cap):
     target[up_mask] = 1
     target[down_mask] = 0
     df['Target'] = target
-    df['DeadZone_Ratio'] = 1 - (up_mask.sum() + down_mask.sum()) / len(df)  # 참고용: 횡보 구간 비중
+    df['DeadZone_Ratio'] = 1 - (up_mask.sum() + down_mask.sum()) / len(df)
     return df
 
 
 # ============================================================
-# 5) 텔레그램 알림
+# 5) 페어 확률 변환 — 벤치마크 확률을 롱/인버스에 적용
+# ============================================================
+def apply_direction(benchmark_up_prob, benchmark_down_prob, direction):
+    """
+    direction=+1(롱)이면 벤치마크 확률 그대로,
+    direction=-1(인버스)이면 up/down을 반전해서 반환.
+    이 함수를 통해서만 ETF의 up/down을 결정하므로 페어 모순이 구조적으로 불가능하다.
+    """
+    if direction == +1:
+        return benchmark_up_prob, benchmark_down_prob
+    else:
+        return benchmark_down_prob, benchmark_up_prob
+
+
+# ============================================================
+# 6) 텔레그램 알림
 # ============================================================
 def send_telegram(message):
     token = os.environ.get('TELEGRAM_TOKEN')
