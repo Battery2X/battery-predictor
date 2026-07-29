@@ -63,6 +63,7 @@ def run():
             report += f"    * ⚠️ 3배 레버리지 — 장기보유 시 decay 누적 위험 매우 큼, 포지션 목적엔 원래 부적합한 상품군\n"
             report += f"    * 방향성: {direction_label(up_prob, down_prob)} (상승 {up_prob:.1f}% / 하락 {down_prob:.1f}%) " \
                       f"— {benchmark} 모델 기준({'그대로' if meta['direction']==1 else '반전'})\n"
+            report += f"    * {edge_label(result['edge'])} (엣지 {result['edge']:+.1f}%p) — 확률이 높아도 엣지가 약하면 사실상 과거 평균 수준\n"
             report += f"    * 📊 실전 적중률: {acc_str}\n"
             report += f"    * 현재가: ${metrics['price']:.2f} | 20일 변동성(연율): {metrics['vol']*100:.1f}%\n"
 
