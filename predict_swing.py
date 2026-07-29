@@ -1,6 +1,6 @@
 """
-predict_scalp.py — 단타(익일 방향성) 예측 (v22.0)
-호라이즌: 1거래일
+predict_swing.py — 스윙(1~2주 방향성) 예측 (v22.0)
+호라이즌: 5거래일
 구조: QQQ/SMH/SPY 벤치마크 방향을 각 1회 예측 -> 롱/인버스 페어에 적용
 """
 import traceback
@@ -17,8 +17,8 @@ from common import (
     apply_direction, check_upcoming_events, send_telegram, direction_label,
 )
 
-HORIZON_DAYS = 1
-LEVERAGED_THRESHOLD_CAP = 0.04     # 레버리지 상품(3배) 기준 하루 4%
+HORIZON_DAYS = 5
+LEVERAGED_THRESHOLD_CAP = 0.08     # 레버리지 상품(3배) 기준 5일간 8%
 BENCHMARK_MULTIPLIER = 3           # 벤치마크는 그 1/3만 움직이므로 임계값도 나눠줌
 MIN_TRAIN_ROWS = 300
 
@@ -39,9 +39,9 @@ def train_benchmark_model(benchmark, macro_df):
     X, y = df_train[FEATURE_COLUMNS], df_train['Target']
 
     tscv = TimeSeriesSplit(n_splits=3)
-    xgb = XGBClassifier(n_estimators=150, max_depth=3, learning_rate=0.08,
+    xgb = XGBClassifier(n_estimators=250, max_depth=4, learning_rate=0.05,
                          subsample=0.8, colsample_bytree=0.8, eval_metric='logloss', random_state=42)
-    lgbm = LGBMClassifier(n_estimators=150, max_depth=3, learning_rate=0.08, verbose=-1, random_state=42)
+    lgbm = LGBMClassifier(n_estimators=250, max_depth=4, learning_rate=0.05, verbose=-1, random_state=42)
 
     f1 = prec = rec = 0
     for tr_idx, te_idx in tscv.split(X):
@@ -74,13 +74,13 @@ def train_benchmark_model(benchmark, macro_df):
 
 
 def run():
-    print("🚀 [단타] 1일 호라이즌 방향성 스캔 시작 (벤치마크 중심 구조)...")
-    event_lines = check_upcoming_events(window_days=1)
+    print("🚀 [스윙] 5일 호라이즌 방향성 스캔 시작 (벤치마크 중심 구조)...")
+    event_lines = check_upcoming_events(window_days=7)
 
     macro_df = fetch_macro_data()
-    report = "🤖 [단타 · 1일 호라이즌]\n" + "=" * 40 + "\n"
+    report = "🤖 [스윙 · 5일 호라이즌]\n" + "=" * 40 + "\n"
     if event_lines:
-        report += "📅 [임박 이벤트]\n" + "\n".join(event_lines) + "\n" + "=" * 40 + "\n"
+        report += "📅 [1주일 내 이벤트]\n" + "\n".join(event_lines) + "\n" + "=" * 40 + "\n"
 
     for benchmark in BENCHMARK_TICKERS:
         result = train_benchmark_model(benchmark, macro_df)
@@ -103,7 +103,7 @@ def run():
             etf_vol = etf_df['Close'].pct_change().rolling(20).std().iloc[-1] * (252 ** 0.5)
 
             report += f"  📌 {ticker} ({meta['desc']})\n"
-            report += f"    * ⚠️ 3배 레버리지 — 일별 리밸런싱 decay 존재, 단타 전용 상품\n"
+            report += f"    * ⚠️ 3배 레버리지 — 수일 보유 시에도 decay 누적, 손절선 필수\n"
             report += f"    * 방향성: {direction_label(up_prob, down_prob)} (상승 {up_prob:.1f}% / 하락 {down_prob:.1f}%) " \
                       f"— {benchmark} 모델 기준({'그대로' if meta['direction']==1 else '반전'})\n"
             report += f"    * 현재가: ${current_price:.2f} | 20일 변동성(연율): {etf_vol*100:.1f}%\n"
@@ -117,6 +117,6 @@ if __name__ == "__main__":
     try:
         run()
     except Exception:
-        err = f"🚨 [단타] 에러:\n{traceback.format_exc()[:800]}"
+        err = f"🚨 [스윙] 에러:\n{traceback.format_exc()[:800]}"
         print(err)
         send_telegram(err)
