@@ -1,6 +1,10 @@
 name: Run Leveraged ETF Predictor
 on:
   workflow_dispatch: # 자동화(스케줄)를 없애고 수동 실행 버튼만 남김
+
+permissions:
+  contents: write  # logs/ 폴더를 커밋해서 다시 push하기 위해 필요
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,3 +48,14 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
         run: python predict_position.py
+      - name: 📝 예측 로그 커밋 (실전 적중률 추적용)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add logs/ 2>/dev/null || true
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update prediction logs [skip ci]"
+            git push
+          else
+            echo "변경된 로그 없음 — 커밋 스킵"
+          fi
