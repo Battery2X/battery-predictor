@@ -78,7 +78,8 @@ def run():
 
         report += f"📌 {ticker} ({meta['desc']}, {meta['family']})\n"
         report += f"  * ⚠️ 3배 레버리지 — 일별 리밸런싱 decay 존재, 단타 전용 상품\n"
-        report += f"  * 방향성: {direction_label(up_prob, down_prob)} (상승확률 {up_prob:.1f}%)\n"
+        report += f"  * 방향성: {direction_label(up_prob, down_prob)} (상승확률 {up_prob:.1f}% / 하락확률 {down_prob:.1f}%)\n"
+        report += f"  * 참고: 위 확률은 '유의미한 움직임 발생 시 방향'을 뜻함 (횡보 구간 {df['DeadZone_Ratio'].iloc[-1]*100:.0f}%는 학습 제외)\n"
         report += f"  * 현재가: ${df['Close'].iloc[-1]:.2f} | 20일 변동성(연율): {df['HistVol20'].iloc[-1]*100:.1f}%\n"
         report += f"  * 교차검증: F1 {f1*100:.1f}% | P {prec*100:.0f}% | R {rec*100:.0f}%\n"
         report += "-" * 40 + "\n"
