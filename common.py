@@ -156,11 +156,34 @@ FEATURE_COLUMNS = [
 # 4) 타겟 생성 (호라이즌별로 파라미터만 다르게)
 # ============================================================
 def build_target(df, horizon_days, threshold_cap):
-    """horizon_days 뒤 수익률이 동적 임계값을 넘으면 1 (상승), 아니면 0."""
+    """
+    v21.0 재설계: 대칭적 3구간(상승/하락/횡보) + 횡보(dead-zone)는 학습에서 제외.
+
+    기존 방식("수익률 > 임계값 → 1, 아니면 0")은 하락·횡보·작은 상승이
+    전부 0으로 뭉쳐서, down_prob이 "하락 확률"이 아니라 "큰 상승이 아닐 확률"이
+    되어버리는 문제가 있었다 (TQQQ·SQQQ 같은 완전 반대 상품이 동시에
+    "하락 우세"로 나오는 모순이 이 때문에 발생).
+
+    이제는:
+      - Target_Ret > +임계값  → 1 (상승)
+      - Target_Ret < -임계값  → 0 (하락)
+      - 그 사이(횡보)         → NaN (학습/추론 대상에서 제외)
+    이렇게 대칭 구간으로 나눠서, 모델이 "상승 vs 하락"을 명확히 구분하도록 한다.
+    단, 이 확률은 "유의미한 방향성 움직임이 발생했을 때 그 방향이 상승일 확률"을
+    의미하며, "그런 움직임 자체가 일어날 확률"까지 알려주지는 않는다는 점은
+    리포트에서 함께 안내한다.
+    """
     rolling_median_ret = df['Close'].pct_change().abs().rolling(window=60, min_periods=20).median()
     dyn_threshold = np.clip(rolling_median_ret * 0.5 * np.sqrt(horizon_days), 0.003, threshold_cap)
     df['Target_Ret'] = df['Close'].pct_change(horizon_days).shift(-horizon_days)
-    df['Target'] = np.where(df['Target_Ret'] > dyn_threshold, 1, 0)
+
+    target = np.full(len(df), np.nan)
+    up_mask = (df['Target_Ret'] > dyn_threshold).values
+    down_mask = (df['Target_Ret'] < -dyn_threshold).values
+    target[up_mask] = 1
+    target[down_mask] = 0
+    df['Target'] = target
+    df['DeadZone_Ratio'] = 1 - (up_mask.sum() + down_mask.sum()) / len(df)  # 참고용: 횡보 구간 비중
     return df
 
 
@@ -168,10 +191,10 @@ def build_target(df, horizon_days, threshold_cap):
 # 5) 텔레그램 알림
 # ============================================================
 def send_telegram(message):
-    token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    token = os.environ.get('TELEGRAM_TOKEN')
     chat_id = os.environ.get('TELEGRAM_CHAT_ID')
     if not token or not chat_id:
-        print("⚠️ TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID 미설정 — 콘솔에만 출력합니다.")
+        print("⚠️ TELEGRAM_TOKEN / TELEGRAM_CHAT_ID 미설정 — 콘솔에만 출력합니다.")
         return
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     try:
@@ -182,10 +205,12 @@ def send_telegram(message):
 
 def direction_label(up_prob, down_prob):
     if up_prob >= 65:
-        return "🟢 강한 상승 추세"
-    elif up_prob >= 50:
-        return "🟡 약한 상승 추세"
+        return "🟢 강한 상승 우세"
+    elif up_prob >= 55:
+        return "🟡 약한 상승 우세"
     elif down_prob >= 65:
-        return "🔴 강한 하락 경계"
+        return "🔴 강한 하락 우세"
+    elif down_prob >= 55:
+        return "🟠 약한 하락 우세"
     else:
-        return "🟠 하락 우세"
+        return "⚪ 방향성 불분명 (50%대 근접)"
