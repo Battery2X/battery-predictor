@@ -9,7 +9,7 @@ from common import (
     LEVERAGE_UNIVERSE, BENCHMARK_TICKERS,
     fetch_macro_data, fetch_display_metrics, train_benchmark_model,
     apply_direction, check_upcoming_events, send_telegram, direction_label,
-    settle_predictions, append_predictions, rolling_accuracy, make_prediction_record,
+    settle_predictions, append_predictions, rolling_accuracy, make_prediction_record, edge_label,
 )
 
 LOG_NAME = "scalp"
@@ -42,6 +42,8 @@ def run():
                   f"보정후 상승 {result['up_prob']:.1f}% / 하락 {result['down_prob']:.1f}%, 원시확률 {result['raw_up_prob']:.1f}%)\n"
         report += f"   교차검증: F1 {result['f1']*100:.1f}% | P {result['prec']*100:.0f}% | R {result['rec']*100:.0f}% " \
                   f"| 횡보비중 {result['dead_zone']*100:.0f}%\n"
+        report += f"   기준선(과거 상승비율): {result['base_rate']:.1f}% | 모델 엣지: {result['edge']:+.1f}%p " \
+                  f"({edge_label(result['edge'])})\n"
 
         for ticker, meta in LEVERAGE_UNIVERSE.items():
             if meta['benchmark'] != benchmark:
