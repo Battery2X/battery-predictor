@@ -265,10 +265,18 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
     raw_up_prob = float(final_probs[0][1])
     calibrated_up_prob = float(calibrator.predict([raw_up_prob])[0])
 
+    # 기준선(base rate): 횡보 제외 학습 샘플 중 실제 상승 비율.
+    # 모델의 진짜 엣지 = 보정확률 - 기준선. 이 값이 0에 가까우면
+    # 모델이 "그 시점 특유의 정보"가 아니라 그냥 과거 평균(강세장 편향 등)을
+    # 재현하고 있을 가능성이 높다는 뜻.
+    base_rate = float(y.mean() * 100)
+
     return {
         'up_prob': calibrated_up_prob * 100,
         'down_prob': (1 - calibrated_up_prob) * 100,
         'raw_up_prob': raw_up_prob * 100,
+        'base_rate': base_rate,
+        'edge': calibrated_up_prob * 100 - base_rate,
         'f1': f1, 'prec': prec, 'rec': rec,
         'dead_zone': df['DeadZone_Ratio'].iloc[-1],
     }
@@ -401,3 +409,17 @@ def direction_label(up_prob, down_prob):
         return "🟠 약한 하락 우세"
     else:
         return "⚪ 방향성 불분명 (50%대 근접)"
+
+
+def edge_label(edge):
+    """
+    edge = 보정확률 - 기준선(base rate).
+    0에 가까우면 모델이 그 시점 정보가 아니라 과거 평균(강세장 편향 등)을
+    재현하고 있을 가능성이 높다는 뜻.
+    """
+    if abs(edge) < 3:
+        return "⚠️ 엣지 거의 없음 (기준선과 거의 동일 — 그냥 과거 평균을 재현 중일 수 있음)"
+    elif abs(edge) < 7:
+        return "△ 약한 엣지"
+    else:
+        return "✅ 뚜렷한 엣지"
