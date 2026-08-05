@@ -40,7 +40,12 @@ LEVERAGE_UNIVERSE = {
 }
 
 BENCHMARK_TICKERS = ['QQQ', 'SMH', 'SPY']
-REL_COMPARISON = {'QQQ': 'SPY', 'SMH': 'SPY', 'SPY': None}
+REL_COMPARISON = {'QQQ': 'SPY', 'SMH': 'SPY', 'SPY': None,
+                  # 개별 종목은 나스닥(QQQ) 대비 상대강도로 비교 (전부 나스닥 대형 기술주라서)
+                  'AAPL': 'QQQ', 'NVDA': 'QQQ', 'TSLA': 'QQQ'}
+
+# 개별 종목(레버리지 아님) 유니버스 — 페어 개념 없이 방향성만 그대로 사용
+STOCK_TICKERS = ['AAPL', 'NVDA', 'TSLA']
 MACRO_TICKERS = {'QQQ': 'QQQ', 'SMH': 'SMH', 'SPY': 'SPY', 'VIX': '^VIX', 'TNX': '^TNX'}
 
 MARKET_EVENTS = {
