@@ -1,6 +1,11 @@
 name: Run Leveraged ETF Predictor
 on:
-  workflow_dispatch: # 자동화(스케줄)를 없애고 수동 실행 버튼만 남김
+  schedule:
+    # 매 정각은 GitHub 서버 부하로 지연되기 쉬워서 17분에 배치.
+    # UTC 00:17 = 한국시간(KST) 09:17.
+    # 화~토(2-6)에 실행 => 미국장 월~금 마감분을 다음날 아침에 반영.
+    - cron: '17 0 * * 2-6'
+  workflow_dispatch: # 수동 실행 버튼도 그대로 유지
 
 permissions:
   contents: write  # logs/ 폴더를 커밋해서 다시 push하기 위해 필요
@@ -48,7 +53,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
         run: python predict_position.py
-      - name: 📝 예측 로그 커밋 (실전 적중률 추적용)
+      - name: 📝 예측 로그 커밋 (실전 적중률 추적용 + 저장소 활성 상태 유지)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
