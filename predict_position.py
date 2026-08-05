@@ -1,63 +1,75 @@
 """
-predict_stock_position.py — 개별 종목(AAPL/NVDA/TSLA) 포지션(1개월 내외 방향성) 예측
+predict_position.py — 포지션(1개월 내외 방향성) 예측 (v23.0)
 호라이즌: 20거래일
-레버리지 ETF와 달리 페어(롱/인버스) 개념이 없어서 종목당 모델 하나씩 직접 사용.
 """
 import traceback
 import pandas as pd
 
 from common import (
-    STOCK_TICKERS, fetch_macro_data, fetch_display_metrics, train_benchmark_model,
-    check_upcoming_events, send_telegram, direction_label, edge_label,
-    settle_predictions, append_predictions, rolling_accuracy, make_prediction_record,
+    LEVERAGE_UNIVERSE, BENCHMARK_TICKERS,
+    fetch_macro_data, fetch_display_metrics, train_benchmark_model,
+    apply_direction, check_upcoming_events, send_telegram, direction_label,
+    settle_predictions, append_predictions, rolling_accuracy, make_prediction_record, edge_label,
 )
 
-LOG_NAME = "stock_position"
+LOG_NAME = "position"
 HORIZON_DAYS = 20
-THRESHOLD_CAP = 0.12      # 개별 종목(레버리지 아님) 기준 한 달간 12%
+LEVERAGED_THRESHOLD_CAP = 0.15
 MODEL_PARAMS = {'n_estimators': 300, 'max_depth': 5, 'learning_rate': 0.03}
 
 
 def run():
-    print("🚀 [종목-포지션] 20일 호라이즌 방향성 스캔 시작 (AAPL/NVDA/TSLA)...")
+    print("🚀 [포지션] 20일 호라이즌 방향성 스캔 시작 (v23.0: 보정+적중률추적)...")
     run_date = pd.Timestamp.now()
     event_lines = check_upcoming_events(window_days=30)
 
+    # 1) 과거 예측 결과 정산 (호라이즌 지난 건들 실제 결과 확인) — 한 번만 호출
     settled_df = settle_predictions(LOG_NAME)
 
     macro_df = fetch_macro_data()
-    report = "🤖 [종목-포지션 · 20일 호라이즌]\n" + "=" * 40 + "\n"
+    report = "🤖 [포지션 · 20일 호라이즌]\n" + "=" * 40 + "\n"
     if event_lines:
         report += "📅 [1개월 내 이벤트]\n" + "\n".join(event_lines) + "\n" + "=" * 40 + "\n"
 
     new_rows = []
-    for ticker in STOCK_TICKERS:
-        result = train_benchmark_model(ticker, macro_df, HORIZON_DAYS, THRESHOLD_CAP,
-                                        benchmark_multiplier=1, min_train_rows=400, model_params=MODEL_PARAMS)
+    for benchmark in BENCHMARK_TICKERS:
+        result = train_benchmark_model(benchmark, macro_df, HORIZON_DAYS, LEVERAGED_THRESHOLD_CAP,
+                                        min_train_rows=400, model_params=MODEL_PARAMS)
         if result is None:
-            report += f"📌 {ticker}: ⚠️ 데이터 부족 — 이번 회차 스킵\n" + "-"*40 + "\n"
             continue
 
-        metrics = fetch_display_metrics(ticker)
-        if metrics is None:
-            report += f"📌 {ticker}: ⚠️ 시세 조회 실패 — 이번 회차 스킵\n" + "-"*40 + "\n"
-            continue
-
-        acc = rolling_accuracy(settled_df, ticker, window=20)
-        acc_str = f"최근 {acc['n']}회 적중률 {acc['accuracy']:.0f}%" if acc else "적중률 데이터 축적 중"
-
-        report += f"📌 {ticker}\n"
-        report += f"  * 방향성: {direction_label(result['up_prob'], result['down_prob'])} " \
-                  f"(보정후 상승 {result['up_prob']:.1f}% / 하락 {result['down_prob']:.1f}%, 원시확률 {result['raw_up_prob']:.1f}%)\n"
-        report += f"  * {edge_label(result['edge'])} (기준선 {result['base_rate']:.1f}% | 엣지 {result['edge']:+.1f}%p)\n"
-        report += f"  * 교차검증: F1 {result['f1']*100:.1f}% | P {result['prec']*100:.0f}% | R {result['rec']*100:.0f}% " \
+        report += f"■ 벤치마크: {benchmark} (방향성: {direction_label(result['up_prob'], result['down_prob'])}, " \
+                  f"보정후 상승 {result['up_prob']:.1f}% / 하락 {result['down_prob']:.1f}%, 원시확률 {result['raw_up_prob']:.1f}%)\n"
+        report += f"   교차검증: F1 {result['f1']*100:.1f}% | P {result['prec']*100:.0f}% | R {result['rec']*100:.0f}% " \
                   f"| 횡보비중 {result['dead_zone']*100:.0f}%\n"
-        report += f"  * 📊 실전 적중률: {acc_str}\n"
-        report += f"  * 현재가: ${metrics['price']:.2f} | 20일 변동성(연율): {metrics['vol']*100:.1f}%\n"
-        report += "-" * 40 + "\n"
+        report += f"   기준선(과거 상승비율): {result['base_rate']:.1f}% | 모델 엣지: {result['edge']:+.1f}%p " \
+                  f"({edge_label(result['edge'])})\n"
 
-        new_rows.append(make_prediction_record(run_date, ticker, ticker, HORIZON_DAYS,
-                                                 result['up_prob'], result['raw_up_prob'], metrics['price']))
+        for ticker, meta in LEVERAGE_UNIVERSE.items():
+            if meta['benchmark'] != benchmark:
+                continue
+            metrics = fetch_display_metrics(ticker)
+            if metrics is None:
+                report += f"  📌 {ticker}: ⚠️ 시세 조회 실패 — 이번 회차 스킵\n"
+                continue
+
+            up_prob, down_prob = apply_direction(result['up_prob'], result['down_prob'], meta['direction'])
+            raw_up, raw_down = apply_direction(result['raw_up_prob'], 100-result['raw_up_prob'], meta['direction'])
+
+            acc = rolling_accuracy(settled_df, ticker, window=20)
+            acc_str = f"최근 {acc['n']}회 적중률 {acc['accuracy']:.0f}%" if acc else "적중률 데이터 축적 중"
+
+            report += f"  📌 {ticker} ({meta['desc']})\n"
+            report += f"    * ⚠️ 3배 레버리지 — 장기보유 시 decay 누적 위험 매우 큼, 포지션 목적엔 원래 부적합한 상품군\n"
+            report += f"    * 방향성: {direction_label(up_prob, down_prob)} (상승 {up_prob:.1f}% / 하락 {down_prob:.1f}%) " \
+                      f"— {benchmark} 모델 기준({'그대로' if meta['direction']==1 else '반전'})\n"
+            report += f"    * {edge_label(result['edge'])} (엣지 {result['edge']:+.1f}%p) — 확률이 높아도 엣지가 약하면 사실상 과거 평균 수준\n"
+            report += f"    * 📊 실전 적중률: {acc_str}\n"
+            report += f"    * 현재가: ${metrics['price']:.2f} | 20일 변동성(연율): {metrics['vol']*100:.1f}%\n"
+
+            new_rows.append(make_prediction_record(run_date, benchmark, ticker, HORIZON_DAYS,
+                                                     up_prob, raw_up, metrics['price']))
+        report += "-" * 40 + "\n"
 
     if new_rows:
         append_predictions(LOG_NAME, new_rows)
@@ -70,6 +82,6 @@ if __name__ == "__main__":
     try:
         run()
     except Exception:
-        err = f"🚨 [종목-포지션] 에러:\n{traceback.format_exc()[:800]}"
+        err = f"🚨 [포지션] 에러:\n{traceback.format_exc()[:800]}"
         print(err)
         send_telegram(err)
