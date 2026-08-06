@@ -247,20 +247,31 @@ def fetch_analyst_momentum_features(ticker, start_date='2022-01-01'):
     """
     try:
         raw = yf.Ticker(ticker).upgrades_downgrades
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ [{ticker}] 애널리스트 데이터 조회 실패: {e}")
         return None
     if raw is None or raw.empty:
+        print(f"⚠️ [{ticker}] 애널리스트 데이터 없음 (upgrades_downgrades 비어있음)")
         return None
 
     ud = raw.reset_index()
     date_col = ud.columns[0]  # 보통 'GradeDate'라는 이름의 인덱스가 첫 컬럼으로 옴
     if 'Action' not in ud.columns:
+        print(f"⚠️ [{ticker}] 'Action' 컬럼 없음 — yfinance 응답 형식 확인 필요. 실제 컬럼: {list(ud.columns)}")
         return None
 
     ud[date_col] = pd.to_datetime(ud[date_col], errors='coerce')
     ud = ud.dropna(subset=[date_col])
     ud = ud[ud[date_col] >= pd.Timestamp(start_date)]
-    if ud.empty:
+
+    print(f"📋 [{ticker}] 애널리스트 등급변경 원본 {len(raw)}건 중 {start_date} 이후 {len(ud)}건 사용")
+
+    # 이벤트가 너무 적으면(예: 몇 건) 롤링 30일 피처가 거의 항상 0이다가 어쩌다 한 번 튀는
+    # 형태가 되어 트리 모델이 그 한 번의 스파이크에 과적합하기 쉽다. 최소 건수 미달이면
+    # 이 피처 자체를 신뢰할 수 없다고 보고 사용하지 않는다.
+    MIN_EVENTS = 10
+    if len(ud) < MIN_EVENTS:
+        print(f"⚠️ [{ticker}] 애널리스트 이벤트 {len(ud)}건 < 최소 기준 {MIN_EVENTS}건 — 이 피처 사용 안 함 (데이터 부실 의심)")
         return None
 
     action = ud['Action'].astype(str).str.lower()
