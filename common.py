@@ -76,6 +76,100 @@ def earnings_proximity_warning(ticker, window_days=5):
     return None
 MACRO_TICKERS = {'QQQ': 'QQQ', 'SMH': 'SMH', 'SPY': 'SPY', 'VIX': '^VIX', 'TNX': '^TNX'}
 
+# SOXX(반도체 ETF) 상위 10종목 비중 (2026-08-04 기준 스냅샷, 상위 10종목이 전체의 약 61%)
+# SOXL/SOXS 모델(SMH 벤치마크)에만 구성종목 폭(breadth)/쏠림(dispersion) 피처로 사용
+SOXX_TOP_HOLDINGS_WEIGHTS = {
+    'AMD': 8.54, 'NVDA': 8.53, 'AVGO': 7.95, 'MU': 7.81, 'INTC': 5.41,
+    'AMAT': 5.16, 'MRVL': 4.53, 'TSM': 4.40, 'KLAC': 4.32, 'LRCX': 4.24,
+}
+
+
+def fetch_constituent_breadth_features(start_date='2022-01-01'):
+    """
+    SOXX 상위 10종목의 개별 가격을 받아와 SMH 하나로는 안 보이는 두 가지 신호를 만든다.
+      - ConstMomentum5 : 비중가중 평균 5일 수익률 (SMH 자체 모멘텀과 유사하지만 구성 방식이 다름)
+      - ConstBreadth5  : 상위 10종목 중 5일 수익률이 양(+)인 종목의 비율 (0~1). 지수는 오르는데
+                         소수 대형주가 끌고 나머지는 빠지는 "쏠림 상승"을 구분해줌
+      - ConstDispersion5: 비중가중 5일 수익률의 표준편차. 종목 간 방향이 갈릴수록 커짐
+                         (섹터 내부에서 의견이 갈리는 국면 = 변동성 확대 전조로 흔히 해석됨)
+    반환: DatetimeIndex를 가진 DataFrame (컬럼: ConstMomentum5, ConstBreadth5, ConstDispersion5)
+    """
+    total_w = sum(SOXX_TOP_HOLDINGS_WEIGHTS.values())
+    norm_weights = {k: v / total_w for k, v in SOXX_TOP_HOLDINGS_WEIGHTS.items()}
+
+    ret_frames = {}
+    for ticker in SOXX_TOP_HOLDINGS_WEIGHTS:
+        df = fetch_ticker_data(ticker, start_date=start_date)
+        if df is None:
+            continue
+        ret_frames[ticker] = df['Close'].pct_change(5)
+
+    if not ret_frames:
+        return pd.DataFrame(columns=['ConstMomentum5', 'ConstBreadth5', 'ConstDispersion5'])
+
+    ret_df = pd.DataFrame(ret_frames).ffill().dropna(how='all')
+    weight_series = pd.Series({k: norm_weights[k] for k in ret_df.columns})
+    # 결측 종목이 있는 날짜엔 남은 종목들끼리 비중을 재정규화해서 가중평균
+    valid_mask = ret_df.notna()
+    effective_w = valid_mask.mul(weight_series, axis=1)
+    effective_w = effective_w.div(effective_w.sum(axis=1), axis=0)
+
+    const_momentum = (ret_df.fillna(0) * effective_w).sum(axis=1)
+    const_breadth = (ret_df > 0).sum(axis=1) / valid_mask.sum(axis=1)
+    const_dispersion = (ret_df.sub(const_momentum, axis=0).pow(2) * effective_w).sum(axis=1).pow(0.5)
+
+    out = pd.DataFrame({
+        'ConstMomentum5': const_momentum,
+        'ConstBreadth5': const_breadth,
+        'ConstDispersion5': const_dispersion,
+    })
+    return out.dropna()
+
+# ============================================================
+# SOXX(반도체 ETF) 상위 10종목 비중 — 2026-08-04 기준 (SOXX_holdings.csv)
+# SOXL/SOXS가 추종하는 반도체지수와 구성이 거의 동일해서 대용치로 사용.
+# 주기적으로 갱신 필요 (비중은 시간에 따라 바뀜).
+# ============================================================
+SOXX_TOP_HOLDINGS = {
+    'AMD': 8.54, 'NVDA': 8.53, 'AVGO': 7.95, 'MU': 7.81, 'INTC': 5.41,
+    'AMAT': 5.16, 'MRVL': 4.53, 'TSM': 4.40, 'KLAC': 4.32, 'LRCX': 4.24,
+}
+
+
+def fetch_constituent_breadth(start_date='2022-01-01'):
+    """
+    SOXX 상위 10종목의 개별 가격을 모아서 SMH 모델용 '체감폭/쏠림도' 피처를 만든다.
+    - Breadth20: 20일 수익률이 플러스인 종목 비율(%) — "다 같이 오르는지"
+    - Dispersion20: 20일 수익률의 종목간 표준편차(%) — "쏠림이 심한지"(소수 종목만 급등)
+    - WeightedMom20: 비중가중 20일 평균 수익률 — SMH 자체 수익률과 유사하지만
+      상위 10종목만 반영한 순수 버전(SMH는 34개+ 전체를 반영)
+    이 셋 중 Breadth/Dispersion은 SMH 가격 하나만 봐서는 알 수 없는 정보라
+    기존 피처셋에 없던 새로운 신호가 될 수 있다.
+    """
+    closes = {}
+    for ticker in SOXX_TOP_HOLDINGS:
+        df = fetch_ticker_data(ticker, start_date)
+        if df is not None and not df.empty:
+            closes[ticker] = df['Close']
+    if not closes:
+        return pd.DataFrame()
+
+    price_df = pd.DataFrame(closes).ffill().dropna(how='all')
+    ret20 = price_df.pct_change(20)
+
+    weights = pd.Series(SOXX_TOP_HOLDINGS)
+    weights = weights.reindex(ret20.columns).fillna(0)
+
+    breadth = (ret20 > 0).sum(axis=1) / ret20.notna().sum(axis=1).replace(0, np.nan) * 100
+    dispersion = ret20.std(axis=1) * 100
+    weighted_mom = ret20.mul(weights, axis=1).sum(axis=1) / weights.sum() if weights.sum() else ret20.mean(axis=1)
+
+    return pd.DataFrame({
+        'Breadth20': breadth,
+        'Dispersion20': dispersion,
+        'WeightedMom20': weighted_mom * 100,
+    })
+
 MARKET_EVENTS = {
     "2026-07-29": {"desc": "FOMC 금리 결정 (한국시간 7/30 오전 3시 발표)",
                    "consensus": "동결 vs 25bp 인상 확률 팽팽 (동결 62~70%, 인상 25~30%)"},
@@ -202,6 +296,12 @@ def build_features(df, benchmark_col):
     if 'TNX' in df.columns:
         df['TNX_chg5'] = df['TNX'].pct_change(5)
 
+    # SOXX 구성종목 폭/쏠림 피처 — train_benchmark_model에서 SMH일 때만 미리 join해줌.
+    # join이 안 됐으면(다른 벤치마크/종목) 0으로 채워 피처 컬럼 개수를 항상 동일하게 유지.
+    for col in ('ConstMomentum5', 'ConstBreadth5', 'ConstDispersion5'):
+        if col not in df.columns:
+            df[col] = 0
+
     return df
 
 
@@ -210,6 +310,7 @@ FEATURE_COLUMNS = [
     'Momentum_High52w', 'TrendSlope', 'Momentum_120', 'ROC10',
     'ATR14', 'StochK', 'HistVol20', 'RelBenchmark20',
     'VIX_level', 'VIX_chg5', 'TNX_chg5',
+    'ConstMomentum5', 'ConstBreadth5', 'ConstDispersion5',
 ]
 
 
@@ -235,11 +336,16 @@ def build_target(df, horizon_days, threshold_cap):
 # 5) 벤치마크 모델 학습 (공통화) + 확률 보정(calibration)
 # ============================================================
 def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
-                           benchmark_multiplier=3, min_train_rows=300, model_params=None):
+                           benchmark_multiplier=3, min_train_rows=300, model_params=None,
+                           extra_features_df=None, extra_feature_cols=None):
     """
     벤치마크 하나에 대해 XGB+LGBM 앙상블을 학습하고,
     교차검증 중 나온 out-of-fold 예측으로 Isotonic Regression 보정기를 만들어
     최종 확률에 적용한다.
+
+    extra_features_df / extra_feature_cols: SMH의 경우 fetch_constituent_breadth()로
+    만든 구성종목 체감폭/쏠림도 데이터를 넘기면 기본 15개 피처에 추가로 합쳐서 학습한다.
+    다른 벤치마크(QQQ/SPY/개별종목)는 기존과 동일하게 None으로 두면 된다.
 
     반환: dict(up_prob, down_prob, raw_up_prob, f1, prec, rec, dead_zone) 또는 None
     """
@@ -249,15 +355,20 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
     df = fetch_ticker_data(benchmark)
     if df is None:
         return None
-    df = df.join(macro_df, how='left').ffill().dropna()
+    df = df.join(macro_df, how='left')
+    if extra_features_df is not None:
+        df = df.join(extra_features_df, how='left')
+    df = df.ffill().dropna()
     df = build_features(df, benchmark_col=REL_COMPARISON[benchmark])
     df = build_target(df, horizon_days, threshold_cap / benchmark_multiplier)
 
-    df_train = df.dropna(subset=['Target'] + FEATURE_COLUMNS).copy()
+    feature_cols = FEATURE_COLUMNS + (extra_feature_cols or [])
+
+    df_train = df.dropna(subset=['Target'] + feature_cols).copy()
     if len(df_train) < min_train_rows:
         return None
 
-    X, y = df_train[FEATURE_COLUMNS], df_train['Target']
+    X, y = df_train[feature_cols], df_train['Target']
 
     tscv = TimeSeriesSplit(n_splits=3)
     xgb = XGBClassifier(eval_metric='logloss', random_state=42, **model_params)
@@ -293,7 +404,7 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
     xgb.fit(X_scaled, y)
     lgbm.fit(X_scaled, y)
 
-    latest = scaler_final.transform(df[FEATURE_COLUMNS].iloc[[-1]])
+    latest = scaler_final.transform(df[feature_cols].iloc[[-1]])
     final_probs = (xgb.predict_proba(latest) + lgbm.predict_proba(latest)) / 2
     raw_up_prob = float(final_probs[0][1])
     calibrated_up_prob = float(calibrator.predict([raw_up_prob])[0])
