@@ -12,6 +12,7 @@ v23.0 변경사항
 4. train_benchmark_model()을 공통 모듈로 이동 (3개 스크립트 중복 제거)
 """
 import os
+import time
 import requests
 import yfinance as yf
 import pandas as pd
@@ -193,10 +194,31 @@ def check_upcoming_events(window_days=2):
 # ============================================================
 # 2) 데이터 수집
 # ============================================================
+def _yf_download_with_retry(ticker, start_date, max_retries=3, base_delay=2):
+    """
+    야후 파이낸스가 일시적으로 요청을 막았을 때(rate limit) 바로 포기하지 않고
+    잠깐 쉬었다가 다시 시도한다. 그래도 계속 실패하면 빈 DataFrame을 반환해서
+    호출부가 '데이터 없음'으로 정상 처리하도록 한다.
+    """
+    for attempt in range(1, max_retries + 1):
+        try:
+            df = yf.download(ticker, start=start_date, progress=False, multi_level_index=False)
+            if not df.empty:
+                return df
+        except Exception as e:
+            print(f"⚠️ [{ticker}] 조회 시도 {attempt}/{max_retries} 실패: {e}")
+        if attempt < max_retries:
+            wait = base_delay * attempt  # 2초, 4초로 점점 늘려가며 대기
+            print(f"⏳ [{ticker}] {wait}초 대기 후 재시도...")
+            time.sleep(wait)
+    print(f"❌ [{ticker}] {max_retries}회 재시도 모두 실패 — 데이터 없음으로 처리")
+    return pd.DataFrame()
+
+
 def fetch_macro_data(start_date='2022-01-01'):
     macro_data = {}
     for name, t in MACRO_TICKERS.items():
-        df_raw = yf.download(t, start=start_date, progress=False, multi_level_index=False)
+        df_raw = _yf_download_with_retry(t, start_date)
         if not df_raw.empty:
             macro_data[name] = df_raw['Close'].squeeze()
     macro_df = pd.DataFrame(macro_data).ffill().dropna()
@@ -204,7 +226,7 @@ def fetch_macro_data(start_date='2022-01-01'):
 
 
 def fetch_ticker_data(ticker, start_date='2022-01-01'):
-    tgt = yf.download(ticker, start=start_date, progress=False, multi_level_index=False)
+    tgt = _yf_download_with_retry(ticker, start_date)
     if tgt.empty:
         return None
     return pd.DataFrame({
