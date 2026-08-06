@@ -1,6 +1,13 @@
 """
-common.py — 레버리지/인버스 ETF 방향성 예측 시스템 공통 모듈 (v23.0)
+common.py — 레버리지/인버스 ETF 방향성 예측 시스템 공통 모듈 (v23.1)
 predict_scalp.py / predict_swing.py / predict_position.py 가 공유한다.
+
+v23.1 변경사항
+------------------------------------------------
+- append_predictions()에 "같은 날 같은 ticker/horizon 중복 기록 방지" 가드 추가.
+  워크플로우가 하루에 여러 번 실행돼도(수동 재실행 포함) 로그는 하루 1건으로 유지되고,
+  실전 적중률 표본이 같은 날 재실행분으로 부풀려지지 않는다.
+  (모델/피처/임계값과는 무관한 로깅 안전장치 — 예측 로직 자체는 v23.0과 동일)
 
 v23.0 변경사항
 ------------------------------------------------
@@ -583,8 +590,38 @@ def settle_predictions(name):
 
 
 def append_predictions(name, rows):
+    """
+    실전 적중률 로그에 새 예측을 추가한다.
+
+    안전장치(v23.1 추가): 같은 날짜(run_date의 날짜 부분)에 동일한 (ticker, horizon_days)
+    조합의 기록이 이미 있으면 그 행은 조용히 스킵한다.
+    -> 워크플로우가 하루에 여러 번 실행돼도(수동 재실행 포함) 로그는 하루 1건으로 유지되고,
+       실전 적중률 표본이 같은 날 재실행분으로 부풀려지지 않는다.
+    -> 로직/피처/임계값과는 무관한 "로깅 안전장치"이며 예측 모델 자체는 전혀 바뀌지 않는다.
+    """
     df = load_log(name)
     new_df = pd.DataFrame(rows)
+    if new_df.empty:
+        return
+
+    new_df['run_date'] = pd.to_datetime(new_df['run_date'])
+
+    if not df.empty:
+        existing_keys = set(
+            zip(df['run_date'].dt.date, df['ticker'], df['horizon_days'])
+        )
+        dup_mask = new_df.apply(
+            lambda r: (r['run_date'].date(), r['ticker'], r['horizon_days']) in existing_keys,
+            axis=1
+        )
+        n_skipped = int(dup_mask.sum())
+        if n_skipped > 0:
+            print(f"ℹ️ [{name}] 오늘 이미 기록된 예측 {n_skipped}건 스킵 (같은 날 재실행 방지)")
+        new_df = new_df[~dup_mask]
+
+    if new_df.empty:
+        return
+
     combined = pd.concat([df, new_df], ignore_index=True)
     save_log(name, combined)
 
