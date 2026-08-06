@@ -404,6 +404,16 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
     xgb.fit(X_scaled, y)
     lgbm.fit(X_scaled, y)
 
+    # 피처 중요도: XGB/LGBM 각각을 0~1로 정규화한 뒤 평균 — 두 모델의 스케일이 달라서
+    # (XGB는 gain 기반, LGBM은 split 기반) 그냥 더하면 한쪽에 치우치므로 정규화 후 평균낸다.
+    xgb_imp = xgb.feature_importances_
+    lgbm_imp = lgbm.feature_importances_
+    xgb_imp_norm = xgb_imp / xgb_imp.sum() if xgb_imp.sum() > 0 else xgb_imp
+    lgbm_imp_norm = lgbm_imp / lgbm_imp.sum() if lgbm_imp.sum() > 0 else lgbm_imp
+    avg_importance = (xgb_imp_norm + lgbm_imp_norm) / 2
+    importance_pairs = sorted(zip(feature_cols, avg_importance), key=lambda x: -x[1])
+    top_features = importance_pairs[:5]
+
     latest = scaler_final.transform(df[feature_cols].iloc[[-1]])
     final_probs = (xgb.predict_proba(latest) + lgbm.predict_proba(latest)) / 2
     raw_up_prob = float(final_probs[0][1])
@@ -423,6 +433,7 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
         'edge': calibrated_up_prob * 100 - base_rate,
         'f1': f1, 'prec': prec, 'rec': rec,
         'dead_zone': df['DeadZone_Ratio'].iloc[-1],
+        'top_features': top_features,
     }
 
 
