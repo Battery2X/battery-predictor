@@ -1,6 +1,6 @@
 """
-predict_scalp.py — 단타(익일 방향성) 예측 (v23.0)
-호라이즌: 1거래일
+predict_swing.py — 스윙(1~2주 방향성) 예측 (v23.0)
+호라이즌: 5거래일
 """
 import traceback
 import pandas as pd
@@ -12,25 +12,25 @@ from common import (
     settle_predictions, append_predictions, rolling_accuracy, make_prediction_record, edge_label,
 )
 
-LOG_NAME = "scalp"
-HORIZON_DAYS = 1
-LEVERAGED_THRESHOLD_CAP = 0.04
-MODEL_PARAMS = {'n_estimators': 150, 'max_depth': 3, 'learning_rate': 0.08}
+LOG_NAME = "swing"
+HORIZON_DAYS = 5
+LEVERAGED_THRESHOLD_CAP = 0.08
+MODEL_PARAMS = {'n_estimators': 250, 'max_depth': 4, 'learning_rate': 0.05}
 
 
 def run():
-    print("🚀 [단타] 1일 호라이즌 방향성 스캔 시작 (v23.0: 보정+적중률추적)...")
+    print("🚀 [스윙] 5일 호라이즌 방향성 스캔 시작 (v23.0: 보정+적중률추적)...")
     run_date = pd.Timestamp.now()
-    event_lines = check_upcoming_events(window_days=1)
+    event_lines = check_upcoming_events(window_days=7)
 
     # 1) 과거 예측 결과 정산 (호라이즌 지난 건들 실제 결과 확인) — 한 번만 호출
     settled_df = settle_predictions(LOG_NAME)
 
     macro_df = fetch_macro_data()
     breadth_df = fetch_constituent_breadth_features()  # SOXX 상위10 종목 체감폭/쏠림도 — SMH 모델 전용 피처
-    report = "🤖 [단타 · 1일 호라이즌]\n" + "=" * 40 + "\n"
+    report = "🤖 [스윙 · 5일 호라이즌]\n" + "=" * 40 + "\n"
     if event_lines:
-        report += "📅 [임박 이벤트]\n" + "\n".join(event_lines) + "\n" + "=" * 40 + "\n"
+        report += "📅 [1주일 내 이벤트]\n" + "\n".join(event_lines) + "\n" + "=" * 40 + "\n"
 
     new_rows = []
     for benchmark in BENCHMARK_TICKERS:
@@ -74,7 +74,7 @@ def run():
             acc_str = f"최근 {acc['n']}회 적중률 {acc['accuracy']:.0f}%" if acc else "적중률 데이터 축적 중"
 
             report += f"  📌 {ticker} ({meta['desc']})\n"
-            report += f"    * ⚠️ 3배 레버리지 — 일별 리밸런싱 decay 존재, 단타 전용 상품\n"
+            report += f"    * ⚠️ 3배 레버리지 — 수일 보유 시에도 decay 누적, 손절선 필수\n"
             report += f"    * 방향성: {direction_label(up_prob, down_prob)} (상승 {up_prob:.1f}% / 하락 {down_prob:.1f}%) " \
                       f"— {benchmark} 모델 기준({'그대로' if meta['direction']==1 else '반전'})\n"
             report += f"    * {edge_label(result['edge'])} (엣지 {result['edge']:+.1f}%p) — 확률이 높아도 엣지가 약하면 사실상 과거 평균 수준\n"
@@ -96,6 +96,6 @@ if __name__ == "__main__":
     try:
         run()
     except Exception:
-        err = f"🚨 [단타] 에러:\n{traceback.format_exc()[:800]}"
+        err = f"🚨 [스윙] 에러:\n{traceback.format_exc()[:800]}"
         print(err)
         send_telegram(err)
