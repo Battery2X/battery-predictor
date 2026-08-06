@@ -9,7 +9,8 @@ import pandas as pd
 from common import (
     STOCK_TICKERS, fetch_macro_data, fetch_display_metrics, train_benchmark_model,
     check_upcoming_events, send_telegram, direction_label, edge_label,
-    settle_predictions, append_predictions, rolling_accuracy, make_prediction_record,
+    settle_predictions, append_predictions, rolling_accuracy, rolling_accuracy_by_earnings, make_prediction_record,
+    earnings_proximity_warning,
 )
 
 LOG_NAME = "stock_swing"
@@ -45,6 +46,8 @@ def run():
 
         acc = rolling_accuracy(settled_df, ticker, window=20)
         acc_str = f"최근 {acc['n']}회 적중률 {acc['accuracy']:.0f}%" if acc else "적중률 데이터 축적 중"
+        earn_warn = earnings_proximity_warning(ticker, window_days=7)
+        is_near_earnings = earn_warn is not None
 
         report += f"📌 {ticker}\n"
         report += f"  * 방향성: {direction_label(result['up_prob'], result['down_prob'])} " \
@@ -53,11 +56,18 @@ def run():
         report += f"  * 교차검증: F1 {result['f1']*100:.1f}% | P {result['prec']*100:.0f}% | R {result['rec']*100:.0f}% " \
                   f"| 횡보비중 {result['dead_zone']*100:.0f}%\n"
         report += f"  * 📊 실전 적중률: {acc_str}\n"
+        acc_split = rolling_accuracy_by_earnings(settled_df, ticker, window=20)
+        if 'near_earnings' in acc_split and 'normal' in acc_split:
+            report += f"  * 📊 실적임박 구간 적중률 {acc_split['near_earnings']['accuracy']:.0f}%(n={acc_split['near_earnings']['n']}) " \
+                      f"vs 평상시 {acc_split['normal']['accuracy']:.0f}%(n={acc_split['normal']['n']})\n"
         report += f"  * 현재가: ${metrics['price']:.2f} | 20일 변동성(연율): {metrics['vol']*100:.1f}%\n"
+        if earn_warn:
+            report += f"  * {earn_warn}\n"
         report += "-" * 40 + "\n"
 
         new_rows.append(make_prediction_record(run_date, ticker, ticker, HORIZON_DAYS,
-                                                 result['up_prob'], result['raw_up_prob'], metrics['price']))
+                                                 result['up_prob'], result['raw_up_prob'], metrics['price'],
+                                                 near_earnings=is_near_earnings))
 
     if new_rows:
         append_predictions(LOG_NAME, new_rows)
