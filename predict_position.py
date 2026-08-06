@@ -44,6 +44,7 @@ def run():
             result = train_benchmark_model(benchmark, macro_df, HORIZON_DAYS, LEVERAGED_THRESHOLD_CAP,
                                             min_train_rows=400, model_params=MODEL_PARAMS)
         if result is None:
+            report += f"■ 벤치마크: {benchmark} — ❌ 데이터 조회 실패(야후 파이낸스 응답 없음/rate limit 의심) — 이번 회차 스킵\n" + "-"*40 + "\n"
             continue
 
         report += f"■ 벤치마크: {benchmark} (방향성: {direction_label(result['up_prob'], result['down_prob'])}, " \
