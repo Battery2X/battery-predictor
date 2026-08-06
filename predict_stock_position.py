@@ -53,6 +53,8 @@ def run():
         report += f"  * 방향성: {direction_label(result['up_prob'], result['down_prob'])} " \
                   f"(보정후 상승 {result['up_prob']:.1f}% / 하락 {result['down_prob']:.1f}%, 원시확률 {result['raw_up_prob']:.1f}%)\n"
         report += f"  * {edge_label(result['edge'])} (기준선 {result['base_rate']:.1f}% | 엣지 {result['edge']:+.1f}%p)\n"
+        top_feat_str = ", ".join([f"{name}({imp*100:.0f}%)" for name, imp in result['top_features']])
+        report += f"  * 🔍 상위 5개 피처: {top_feat_str}\n"
         report += f"  * 교차검증: F1 {result['f1']*100:.1f}% | P {result['prec']*100:.0f}% | R {result['rec']*100:.0f}% " \
                   f"| 횡보비중 {result['dead_zone']*100:.0f}%\n"
         report += f"  * 📊 실전 적중률: {acc_str}\n"
