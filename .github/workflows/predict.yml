@@ -7,6 +7,13 @@ on:
     - cron: '17 0 * * 2-6'
   workflow_dispatch: # 수동 실행 버튼도 그대로 유지
 
+# 동시에 두 실행이 겹치면 logs/ 커밋이 서로 충돌해서 기록이 유실될 수 있음
+# (실제로 겪었던 문제). 새 실행이 들어오면 이전 실행이 끝날 때까지 대기시켜서
+# 겹치는 걸 원천 차단한다. cancel-in-progress:false = 취소하지 않고 순서대로 대기.
+concurrency:
+  group: battery-predictor-single-run
+  cancel-in-progress: false
+
 permissions:
   contents: write  # logs/ 폴더를 커밋해서 다시 push하기 위해 필요
 
@@ -86,6 +93,9 @@ jobs:
           git add logs/ 2>/dev/null || true
           if ! git diff --staged --quiet; then
             git commit -m "chore: update prediction logs [skip ci]"
+            # concurrency 설정으로 겹치는 실행은 막았지만, 혹시 모를 충돌에
+            # 대비해 push 전에 원격 최신본을 먼저 받아 리베이스한다.
+            git pull --rebase origin "${GITHUB_REF_NAME}" || git rebase --abort
             git push
           else
             echo "변경된 로그 없음 — 커밋 스킵"
