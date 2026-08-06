@@ -7,7 +7,7 @@ import pandas as pd
 
 from common import (
     LEVERAGE_UNIVERSE, BENCHMARK_TICKERS,
-    fetch_macro_data, fetch_display_metrics, train_benchmark_model,
+    fetch_macro_data, fetch_display_metrics, train_benchmark_model, fetch_constituent_breadth_features,
     apply_direction, check_upcoming_events, send_telegram, direction_label,
     settle_predictions, append_predictions, rolling_accuracy, make_prediction_record, edge_label,
 )
@@ -27,14 +27,22 @@ def run():
     settled_df = settle_predictions(LOG_NAME)
 
     macro_df = fetch_macro_data()
+    breadth_df = fetch_constituent_breadth_features()  # SOXX 상위10 종목 체감폭/쏠림도 — SMH 모델 전용 피처
     report = "🤖 [단타 · 1일 호라이즌]\n" + "=" * 40 + "\n"
     if event_lines:
         report += "📅 [임박 이벤트]\n" + "\n".join(event_lines) + "\n" + "=" * 40 + "\n"
 
     new_rows = []
     for benchmark in BENCHMARK_TICKERS:
-        result = train_benchmark_model(benchmark, macro_df, HORIZON_DAYS, LEVERAGED_THRESHOLD_CAP,
-                                        min_train_rows=300, model_params=MODEL_PARAMS)
+        if benchmark == 'SMH' and not breadth_df.empty:
+            # FEATURE_COLUMNS에 ConstMomentum5 등이 이미 포함돼 있으므로
+            # extra_features_df만 join하면 됨 (extra_feature_cols를 또 넘기면 컬럼 중복 버그 발생)
+            result = train_benchmark_model(benchmark, macro_df, HORIZON_DAYS, LEVERAGED_THRESHOLD_CAP,
+                                            min_train_rows=300, model_params=MODEL_PARAMS,
+                                            extra_features_df=breadth_df)
+        else:
+            result = train_benchmark_model(benchmark, macro_df, HORIZON_DAYS, LEVERAGED_THRESHOLD_CAP,
+                                            min_train_rows=300, model_params=MODEL_PARAMS)
         if result is None:
             continue
 
@@ -44,6 +52,10 @@ def run():
                   f"| 횡보비중 {result['dead_zone']*100:.0f}%\n"
         report += f"   기준선(과거 상승비율): {result['base_rate']:.1f}% | 모델 엣지: {result['edge']:+.1f}%p " \
                   f"({edge_label(result['edge'])})\n"
+        if benchmark == 'SMH' and not breadth_df.empty:
+            last = breadth_df.iloc[-1]
+            report += f"   📦 SOXX 상위10 구성종목 폭: 상승비율 {last['ConstBreadth5']*100:.0f}% | " \
+                      f"가중모멘텀(5일) {last['ConstMomentum5']*100:+.1f}% | 쏠림도 {last['ConstDispersion5']*100:.1f}\n"
 
         for ticker, meta in LEVERAGE_UNIVERSE.items():
             if meta['benchmark'] != benchmark:
