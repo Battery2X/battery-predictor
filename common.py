@@ -232,6 +232,57 @@ def fetch_display_metrics(ticker):
     return {'price': price, 'vol': vol, 'df': df}
 
 
+def fetch_analyst_momentum_features(ticker, start_date='2022-01-01'):
+    """
+    가격 패턴과 완전히 독립적인 정보원: 애널리스트 등급 변경(상향/하향) 이력.
+    yfinance의 upgrades_downgrades는 실제 등급 변경이 일어난 날짜가 찍혀있어서
+    (다른 구성종목 폭 피처와 달리) 과거로 거슬러 학습용 시계열을 만들 수 있다.
+
+    - AnalystNet30     : 최근 30일 (상향 - 하향) 건수 — 양수면 애널리스트들이 낙관 전환 중
+    - AnalystActivity30: 최근 30일 등급 변경 총 건수 — 그 종목에 대한 애널리스트 관심도/논쟁 강도
+
+    ETF(QQQ/SMH/SPY)는 애널리스트 등급 자체가 없으므로 개별 종목(AAPL/NVDA/TSLA 등)에만 사용한다.
+    yfinance API 응답 형식이 바뀌거나 데이터가 없으면 조용히 None을 반환 — 호출부에서 이미
+    "None이면 이 피처 없이 진행"하도록 방어적으로 짜여 있어야 한다.
+    """
+    try:
+        raw = yf.Ticker(ticker).upgrades_downgrades
+    except Exception:
+        return None
+    if raw is None or raw.empty:
+        return None
+
+    ud = raw.reset_index()
+    date_col = ud.columns[0]  # 보통 'GradeDate'라는 이름의 인덱스가 첫 컬럼으로 옴
+    if 'Action' not in ud.columns:
+        return None
+
+    ud[date_col] = pd.to_datetime(ud[date_col], errors='coerce')
+    ud = ud.dropna(subset=[date_col])
+    ud = ud[ud[date_col] >= pd.Timestamp(start_date)]
+    if ud.empty:
+        return None
+
+    action = ud['Action'].astype(str).str.lower()
+    ud['is_up'] = action.eq('up').astype(int)
+    ud['is_down'] = action.eq('down').astype(int)
+    ud = ud.set_index(date_col).sort_index()
+
+    daily_up = ud['is_up'].resample('D').sum()
+    daily_down = ud['is_down'].resample('D').sum()
+    daily_total = ud['Action'].resample('D').count()
+
+    full_idx = pd.date_range(daily_up.index.min(), pd.Timestamp.now().normalize(), freq='D')
+    daily_up = daily_up.reindex(full_idx, fill_value=0)
+    daily_down = daily_down.reindex(full_idx, fill_value=0)
+    daily_total = daily_total.reindex(full_idx, fill_value=0)
+
+    net30 = (daily_up - daily_down).rolling(30, min_periods=1).sum()
+    activity30 = daily_total.rolling(30, min_periods=1).sum()
+
+    return pd.DataFrame({'AnalystNet30': net30, 'AnalystActivity30': activity30})
+
+
 # ============================================================
 # 3) 기술적 지표 / 피처 엔지니어링
 # ============================================================
@@ -302,6 +353,11 @@ def build_features(df, benchmark_col):
         if col not in df.columns:
             df[col] = 0
 
+    # 애널리스트 등급변경 피처도 동일한 패턴: 개별 종목에서만 미리 join됨, 아니면 0
+    for col in ('AnalystNet30', 'AnalystActivity30'):
+        if col not in df.columns:
+            df[col] = 0
+
     return df
 
 
@@ -311,6 +367,7 @@ FEATURE_COLUMNS = [
     'ATR14', 'StochK', 'HistVol20', 'RelBenchmark20',
     'VIX_level', 'VIX_chg5', 'TNX_chg5',
     'ConstMomentum5', 'ConstBreadth5', 'ConstDispersion5',
+    'AnalystNet30', 'AnalystActivity30',
 ]
 
 
