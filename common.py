@@ -46,6 +46,34 @@ REL_COMPARISON = {'QQQ': 'SPY', 'SMH': 'SPY', 'SPY': None,
 
 # 개별 종목(레버리지 아님) 유니버스 — 페어 개념 없이 방향성만 그대로 사용
 STOCK_TICKERS = ['AAPL', 'NVDA', 'TSLA']
+
+# 종목별 다음 실적 발표(예정)일 — 확정 아닌 예상치 포함, 주기적으로 갱신 필요
+STOCK_EARNINGS_DATES = {
+    'AAPL': '2026-10-29',
+    'NVDA': '2026-08-26',
+    'TSLA': '2026-10-28',
+}
+
+
+def earnings_proximity_warning(ticker, window_days=5):
+    """
+    종목의 다음 실적 발표가 임박했으면 경고 문자열을 반환한다.
+    가격 패턴만 학습한 정량 모델은 실적 발표 전후 신뢰도가 크게 떨어지므로,
+    이 구간에서는 클로드 프로젝트/스킬(10-K, 어닝콜 트랜스크립트 기반 정성 분석)로
+    가이던스 변화·리스크 요인을 따로 확인하라고 안내한다.
+    반환: 경고 문자열 또는 None (임박하지 않음)
+    """
+    date_str = STOCK_EARNINGS_DATES.get(ticker)
+    if not date_str:
+        return None
+    earnings_date = pd.Timestamp(date_str)
+    today = pd.Timestamp.now().normalize()
+    days_left = (earnings_date - today).days
+    if 0 <= days_left <= window_days:
+        return (f"🚨 실적 발표 D-{days_left} ({date_str}) — 이 구간은 정량 모델(가격 패턴)의 "
+                f"신뢰도가 원래 낮음. 클로드 프로젝트/스킬로 가이던스·리스크 변화 등 정성 분석을 "
+                f"별도로 확인 권장")
+    return None
 MACRO_TICKERS = {'QQQ': 'QQQ', 'SMH': 'SMH', 'SPY': 'SPY', 'VIX': '^VIX', 'TNX': '^TNX'}
 
 MARKET_EVENTS = {
@@ -303,7 +331,7 @@ def apply_direction(benchmark_up_prob, benchmark_down_prob, direction):
 LOG_DIR = "logs"
 LOG_COLUMNS = ['run_date', 'benchmark', 'ticker', 'horizon_days', 'predicted_label',
                'predicted_up_prob', 'raw_up_prob', 'price_at_prediction', 'target_date',
-               'actual_price', 'actual_return', 'actual_label', 'correct']
+               'actual_price', 'actual_return', 'actual_label', 'correct', 'near_earnings']
 
 
 def _log_path(name):
@@ -317,6 +345,10 @@ def load_log(name):
         df = pd.read_csv(path)
         df['run_date'] = pd.to_datetime(df['run_date'])
         df['target_date'] = pd.to_datetime(df['target_date'])
+        # v24.0 이전 로그엔 near_earnings 컬럼이 없을 수 있음 — 하위호환을 위해 보강
+        for col in LOG_COLUMNS:
+            if col not in df.columns:
+                df[col] = np.nan
         return df
     return pd.DataFrame(columns=LOG_COLUMNS)
 
@@ -374,7 +406,24 @@ def rolling_accuracy(df, ticker, window=20):
     return {'n': len(sub), 'accuracy': sub['correct'].mean() * 100}
 
 
-def make_prediction_record(run_date, benchmark, ticker, horizon_days, up_prob, raw_up_prob, price):
+def rolling_accuracy_by_earnings(df, ticker, window=20, min_n=3):
+    """
+    실적 발표 임박 구간(near_earnings=True)과 평상시(False)를 나눠서 적중률을 비교한다.
+    각 그룹에 최소 min_n건 이상 쌓여야 결과를 반환한다 (그 전엔 통계적으로 의미 없음).
+    """
+    sub = df[(df['ticker'] == ticker) & df['correct'].notna()].sort_values('run_date')
+    near = sub[sub['near_earnings'] == True].tail(window)
+    normal = sub[sub['near_earnings'] != True].tail(window)
+    result = {}
+    if len(near) >= min_n:
+        result['near_earnings'] = {'n': len(near), 'accuracy': near['correct'].mean() * 100}
+    if len(normal) >= min_n:
+        result['normal'] = {'n': len(normal), 'accuracy': normal['correct'].mean() * 100}
+    return result
+
+
+def make_prediction_record(run_date, benchmark, ticker, horizon_days, up_prob, raw_up_prob, price,
+                            near_earnings=False):
     predicted_label = 1 if up_prob >= 50 else 0
     target_date = (pd.Timestamp(run_date).normalize() + BDay(horizon_days))
     return {
@@ -384,6 +433,7 @@ def make_prediction_record(run_date, benchmark, ticker, horizon_days, up_prob, r
         'price_at_prediction': price, 'target_date': target_date,
         'actual_price': np.nan, 'actual_return': np.nan,
         'actual_label': np.nan, 'correct': np.nan,
+        'near_earnings': near_earnings,
     }
 
 
