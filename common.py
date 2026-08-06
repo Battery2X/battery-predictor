@@ -126,51 +126,6 @@ def fetch_constituent_breadth_features(start_date='2022-01-01'):
     })
     return out.dropna()
 
-# ============================================================
-# SOXX(반도체 ETF) 상위 10종목 비중 — 2026-08-04 기준 (SOXX_holdings.csv)
-# SOXL/SOXS가 추종하는 반도체지수와 구성이 거의 동일해서 대용치로 사용.
-# 주기적으로 갱신 필요 (비중은 시간에 따라 바뀜).
-# ============================================================
-SOXX_TOP_HOLDINGS = {
-    'AMD': 8.54, 'NVDA': 8.53, 'AVGO': 7.95, 'MU': 7.81, 'INTC': 5.41,
-    'AMAT': 5.16, 'MRVL': 4.53, 'TSM': 4.40, 'KLAC': 4.32, 'LRCX': 4.24,
-}
-
-
-def fetch_constituent_breadth(start_date='2022-01-01'):
-    """
-    SOXX 상위 10종목의 개별 가격을 모아서 SMH 모델용 '체감폭/쏠림도' 피처를 만든다.
-    - Breadth20: 20일 수익률이 플러스인 종목 비율(%) — "다 같이 오르는지"
-    - Dispersion20: 20일 수익률의 종목간 표준편차(%) — "쏠림이 심한지"(소수 종목만 급등)
-    - WeightedMom20: 비중가중 20일 평균 수익률 — SMH 자체 수익률과 유사하지만
-      상위 10종목만 반영한 순수 버전(SMH는 34개+ 전체를 반영)
-    이 셋 중 Breadth/Dispersion은 SMH 가격 하나만 봐서는 알 수 없는 정보라
-    기존 피처셋에 없던 새로운 신호가 될 수 있다.
-    """
-    closes = {}
-    for ticker in SOXX_TOP_HOLDINGS:
-        df = fetch_ticker_data(ticker, start_date)
-        if df is not None and not df.empty:
-            closes[ticker] = df['Close']
-    if not closes:
-        return pd.DataFrame()
-
-    price_df = pd.DataFrame(closes).ffill().dropna(how='all')
-    ret20 = price_df.pct_change(20)
-
-    weights = pd.Series(SOXX_TOP_HOLDINGS)
-    weights = weights.reindex(ret20.columns).fillna(0)
-
-    breadth = (ret20 > 0).sum(axis=1) / ret20.notna().sum(axis=1).replace(0, np.nan) * 100
-    dispersion = ret20.std(axis=1) * 100
-    weighted_mom = ret20.mul(weights, axis=1).sum(axis=1) / weights.sum() if weights.sum() else ret20.mean(axis=1)
-
-    return pd.DataFrame({
-        'Breadth20': breadth,
-        'Dispersion20': dispersion,
-        'WeightedMom20': weighted_mom * 100,
-    })
-
 MARKET_EVENTS = {
     "2026-07-29": {"desc": "FOMC 금리 결정 (한국시간 7/30 오전 3시 발표)",
                    "consensus": "동결 vs 25bp 인상 확률 팽팽 (동결 62~70%, 인상 25~30%)"},
