@@ -52,10 +52,12 @@ def run():
                   f"| 횡보비중 {result['dead_zone']*100:.0f}%\n"
         report += f"   기준선(과거 상승비율): {result['base_rate']:.1f}% | 모델 엣지: {result['edge']:+.1f}%p " \
                   f"({edge_label(result['edge'])})\n"
+        top_feat_str = ", ".join([f"{name}({imp*100:.0f}%)" for name, imp in result['top_features']])
+        report += f"   🔍 상위 5개 피처: {top_feat_str}\n"
         if benchmark == 'SMH' and not breadth_df.empty:
             last = breadth_df.iloc[-1]
             report += f"   📦 SOXX 상위10 구성종목 폭: 상승비율 {last['ConstBreadth5']*100:.0f}% | " \
-                      f"가중모멘텀(5일) {last['ConstMomentum5']*100:+.1f}% | 쏠림도 {last['ConstDispersion5']*100:.1f}\n"
+                      f"가중모멘텀(5일) {last['ConstMomentum5']*100:+.1f}% | 쏠림도 {last['ConstDispersion5']*100:.1f}%p\n"
 
         for ticker, meta in LEVERAGE_UNIVERSE.items():
             if meta['benchmark'] != benchmark:
