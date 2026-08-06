@@ -8,6 +8,7 @@ import pandas as pd
 
 from common import (
     STOCK_TICKERS, fetch_macro_data, fetch_display_metrics, train_benchmark_model,
+    fetch_analyst_momentum_features,
     check_upcoming_events, send_telegram, direction_label, edge_label,
     settle_predictions, append_predictions, rolling_accuracy, rolling_accuracy_by_earnings, make_prediction_record,
     earnings_proximity_warning,
@@ -33,8 +34,14 @@ def run():
 
     new_rows = []
     for ticker in STOCK_TICKERS:
-        result = train_benchmark_model(ticker, macro_df, HORIZON_DAYS, THRESHOLD_CAP,
-                                        benchmark_multiplier=1, min_train_rows=400, model_params=MODEL_PARAMS)
+        analyst_df = fetch_analyst_momentum_features(ticker)
+        if analyst_df is not None and not analyst_df.empty:
+            result = train_benchmark_model(ticker, macro_df, HORIZON_DAYS, THRESHOLD_CAP,
+                                            benchmark_multiplier=1, min_train_rows=400, model_params=MODEL_PARAMS,
+                                            extra_features_df=analyst_df)
+        else:
+            result = train_benchmark_model(ticker, macro_df, HORIZON_DAYS, THRESHOLD_CAP,
+                                            benchmark_multiplier=1, min_train_rows=400, model_params=MODEL_PARAMS)
         if result is None:
             report += f"📌 {ticker}: ⚠️ 데이터 부족 — 이번 회차 스킵\n" + "-"*40 + "\n"
             continue
@@ -55,6 +62,10 @@ def run():
         report += f"  * {edge_label(result['edge'])} (기준선 {result['base_rate']:.1f}% | 엣지 {result['edge']:+.1f}%p)\n"
         top_feat_str = ", ".join([f"{name}({imp*100:.0f}%)" for name, imp in result['top_features']])
         report += f"  * 🔍 상위 5개 피처: {top_feat_str}\n"
+        if analyst_df is not None and not analyst_df.empty:
+            last_a = analyst_df.iloc[-1]
+            report += f"  * 🧑‍💼 애널리스트 최근 30일: 순상향 {last_a['AnalystNet30']:+.0f}건 | " \
+                      f"총 등급변경 {last_a['AnalystActivity30']:.0f}건\n"
         report += f"  * 교차검증: F1 {result['f1']*100:.1f}% | P {result['prec']*100:.0f}% | R {result['rec']*100:.0f}% " \
                   f"| 횡보비중 {result['dead_zone']*100:.0f}%\n"
         report += f"  * 📊 실전 적중률: {acc_str}\n"
