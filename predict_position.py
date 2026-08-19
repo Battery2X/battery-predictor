@@ -71,8 +71,12 @@ def run():
             up_prob, down_prob = apply_direction(result['up_prob'], result['down_prob'], meta['direction'])
             raw_up, raw_down = apply_direction(result['raw_up_prob'], 100-result['raw_up_prob'], meta['direction'])
 
-            acc = rolling_accuracy(settled_df, ticker, window=20)
-            acc_str = f"최근 {acc['n']}회 적중률 {acc['accuracy']:.0f}%" if acc else "적중률 데이터 축적 중"
+            acc = rolling_accuracy(settled_df, ticker, window=20, baseline=result['base_rate'])
+            if acc:
+                sig = "✅ 기준선보다 유의미하게 우수" if acc.get('beats_baseline') else "⚠️ 아직 통계적으로 유의미한 우위 아님"
+                acc_str = f"최근 {acc['n']}회 적중률 {acc['accuracy']:.0f}% (95% CI {acc['ci_low']:.0f}~{acc['ci_high']:.0f}%) — {sig}"
+            else:
+                acc_str = "적중률 데이터 축적 중"
 
             report += f"  📌 {ticker} ({meta['desc']})\n"
             report += f"    * ⚠️ 3배 레버리지 — 장기보유 시 decay 누적 위험 매우 큼, 포지션 목적엔 원래 부적합한 상품군\n"
