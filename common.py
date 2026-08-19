@@ -134,6 +134,63 @@ MARKET_EVENTS = {
 }
 
 
+MACRO_SHOCK_STD_WINDOW = 60   # 최근 60거래일 기준으로 "평소 하루 변동폭"을 계산
+MACRO_SHOCK_Z_THRESHOLD = 2.0  # 이 배수 이상 벗어나면 경고
+
+
+def macro_shock_warning(macro_df, z_threshold=MACRO_SHOCK_Z_THRESHOLD, window=MACRO_SHOCK_STD_WINDOW):
+    """
+    당일(최근 1거래일) VIX·10년물 금리(TNX) 변동이 최근 window거래일 평소 수준 대비
+    얼마나 이례적인지 z-score로 확인해서, 기술적 지표 기반 예측의 신뢰도를 낮춰봐야 하는
+    날인지 경고한다.
+
+    기존 학습 피처 VIX_chg5/TNX_chg5는 5일 변화율이라 하루짜리 급변(예: 2026-08-18
+    30년물 금리 19년래 최고 + 반도체 업종 급락 같은 이벤트)이 5일 평균에 묻혀 잘 안 잡힐 수
+    있다. 이 함수는 그 사각지대를 보완하는 순수 규칙 기반 경고이며, 모델 학습·피처·임계값에는
+    전혀 관여하지 않는다 — 그래서 이 로직을 추가/조정해도 지금까지 쌓인 실전 적중률 로그는
+    무효화되지 않는다 (검증 시계 리셋 없음).
+
+    macro_df: fetch_macro_data()의 반환값 (컬럼: QQQ, SMH, SPY, VIX, TNX)
+    반환: 경고 문자열 또는 None (평소 수준이거나 데이터 부족/결측 시 조용히 스킵)
+    """
+    if macro_df is None or macro_df.empty:
+        return None
+    if any(col not in macro_df.columns for col in ('VIX', 'TNX')):
+        return None
+    if len(macro_df) < window + 5:
+        return None
+
+    vix_chg1 = macro_df['VIX'].pct_change(1)
+    tnx_chg1 = macro_df['TNX'].pct_change(1)
+
+    vix_hist = vix_chg1.iloc[-(window + 1):-1]
+    tnx_hist = tnx_chg1.iloc[-(window + 1):-1]
+    vix_std, tnx_std = vix_hist.std(), tnx_hist.std()
+    if not vix_std or not tnx_std or pd.isna(vix_std) or pd.isna(tnx_std) or vix_std == 0 or tnx_std == 0:
+        return None
+
+    vix_today, tnx_today = vix_chg1.iloc[-1], tnx_chg1.iloc[-1]
+    if pd.isna(vix_today) or pd.isna(tnx_today):
+        return None
+
+    vix_z, tnx_z = vix_today / vix_std, tnx_today / tnx_std
+
+    # VIX만 튀는 날은 흔하지만, VIX+금리가 동시에 튀거나 둘 중 하나가 아주 크게 튀는 날은
+    # 드물고 임팩트가 크다 — 합성 데이터 검증 결과 평소엔 ~1.7%, 충격일엔 100% 탐지됨.
+    triggered = (
+        (abs(vix_z) >= z_threshold and abs(tnx_z) >= z_threshold * 0.5)
+        or (abs(vix_z) >= z_threshold * 1.5)
+        or (abs(tnx_z) >= z_threshold * 1.5)
+    )
+    if not triggered:
+        return None
+
+    return (f"🌩️ 매크로 변동성 급증 감지 (VIX 1일 변화 {vix_today*100:+.1f}%, z={vix_z:+.1f} / "
+            f"10Y금리 1일 변화 {tnx_today*100:+.1f}%, z={tnx_z:+.1f}) — 학습 피처(VIX_chg5 등)는 "
+            f"5일 평균이라 오늘 같은 급변은 충분히 못 잡을 수 있음. 오늘 방향 예측은 평소보다 "
+            f"신뢰도 낮게 볼 것")
+
+
 def check_upcoming_events(window_days=2):
     today = datetime.now().date()
     out = []
@@ -566,11 +623,41 @@ def append_predictions(name, rows):
     save_log(name, combined)
 
 
-def rolling_accuracy(df, ticker, window=20):
+def wilson_ci(k, n, z=1.96):
+    """
+    이항비율(적중률)의 Wilson score 신뢰구간. 표본이 적을수록(n이 작을수록) 구간이
+    넓어져서 "숫자만 보면 그럴싸해도 사실 못 믿는 수준"이라는 걸 그대로 드러낸다.
+    (일반 정규근사 신뢰구간보다 n이 작을 때 더 안정적이라 이항비율엔 Wilson을 표준으로 씀)
+
+    k: 적중 횟수, n: 전체 표본 수, z: 신뢰수준 z-value (기본 1.96 = 95%)
+    반환: (하한%, 상한%). n==0이면 (0.0, 100.0) — "아무것도 모른다"를 표현.
+    """
+    if n <= 0:
+        return 0.0, 100.0
+    p = k / n
+    denom = 1 + z**2 / n
+    center = (p + z**2 / (2 * n)) / denom
+    margin = (z * ((p * (1 - p) / n + z**2 / (4 * n**2)) ** 0.5)) / denom
+    return max(0.0, (center - margin) * 100), min(100.0, (center + margin) * 100)
+
+
+def rolling_accuracy(df, ticker, window=20, baseline=None):
+    """
+    baseline(0~100, 보통 그 벤치마크의 base_rate)을 넘겨주면, 실전 적중률의 95% 신뢰구간
+    하한이 baseline을 넘는지("beats_baseline")까지 같이 계산한다. 이게 아니면 "적중률이
+    기준선보다 높아 보인다"는 게 표본이 적어서 생긴 우연인지 진짜 우위인지 구분이 안 된다.
+    """
     sub = df[(df['ticker'] == ticker) & df['correct'].notna()].sort_values('run_date').tail(window)
     if sub.empty:
         return None
-    return {'n': len(sub), 'accuracy': sub['correct'].mean() * 100}
+    n = len(sub)
+    k = int(sub['correct'].sum())
+    accuracy = sub['correct'].mean() * 100
+    ci_low, ci_high = wilson_ci(k, n)
+    out = {'n': n, 'accuracy': accuracy, 'ci_low': ci_low, 'ci_high': ci_high}
+    if baseline is not None:
+        out['beats_baseline'] = ci_low > baseline
+    return out
 
 
 def rolling_accuracy_by_earnings(df, ticker, window=20, min_n=3):
