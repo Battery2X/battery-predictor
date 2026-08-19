@@ -51,8 +51,12 @@ def run():
             report += f"📌 {ticker}: ⚠️ 시세 조회 실패 — 이번 회차 스킵\n" + "-"*40 + "\n"
             continue
 
-        acc = rolling_accuracy(settled_df, ticker, window=20)
-        acc_str = f"최근 {acc['n']}회 적중률 {acc['accuracy']:.0f}%" if acc else "적중률 데이터 축적 중"
+        acc = rolling_accuracy(settled_df, ticker, window=20, baseline=result['base_rate'])
+        if acc:
+            sig = "✅ 기준선보다 유의미하게 우수" if acc.get('beats_baseline') else "⚠️ 아직 통계적으로 유의미한 우위 아님"
+            acc_str = f"최근 {acc['n']}회 적중률 {acc['accuracy']:.0f}% (95% CI {acc['ci_low']:.0f}~{acc['ci_high']:.0f}%) — {sig}"
+        else:
+            acc_str = "적중률 데이터 축적 중"
         earn_warn = earnings_proximity_warning(ticker, window_days=5)
         is_near_earnings = earn_warn is not None
 
