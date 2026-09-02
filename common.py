@@ -617,9 +617,63 @@ def settle_predictions(name):
 
 
 def append_predictions(name, rows):
+    """
+    실전 적중률 로그에 새 예측을 추가한다.
+
+    안전장치 1 (신규 행 스킵): 같은 날짜(run_date의 날짜 부분)에 동일한
+    (ticker, horizon_days) 조합의 기록이 이미 로그에 있으면 그 행은 조용히 스킵한다.
+    -> 워크플로우가 하루에 여러 번 실행돼도(예약 실행 후 수동 재실행 포함) 로그는
+       하루 1건으로 유지되고, 실전 적중률 표본이 같은 날 재실행분으로 부풀려지지 않는다.
+
+    안전장치 2 (저장 직전 최종 정리): 두 실행이 정말로 겹쳐서(레이스 컨디션) 안전장치 1을
+    각자 통과해버린 경우에 대비해, 최종 저장 직전에 (날짜, ticker, horizon_days) 기준으로
+    한 번 더 그룹화해서 run_date가 가장 이른 행만 남긴다. dedup_logs.py의 정리 규칙과 동일.
+
+    -> 이전 버전(v23.1)에 있던 안전장치 1이 이후 커밋에서 유실되어 있었고, 그 자리를
+       메우려 했던 GitHub Actions concurrency 설정은 "겹치는 실행"만 막을 뿐 "예약 실행이
+       끝난 뒤 별개로 들어오는 수동 재실행"은 막지 못해 중복이 계속 쌓였다(로그 전체 행의
+       약 30%). 이번에 안전장치 1을 복원하고 안전장치 2를 추가로 더했다.
+    -> 로직/피처/임계값과는 무관한 "로깅 안전장치"이며 예측 모델 자체는 전혀 바뀌지 않는다.
+    """
     df = load_log(name)
     new_df = pd.DataFrame(rows)
+    if new_df.empty:
+        return
+
+    new_df['run_date'] = pd.to_datetime(new_df['run_date'])
+
+    if not df.empty:
+        existing_keys = set(
+            zip(df['run_date'].dt.date, df['ticker'], df['horizon_days'])
+        )
+        dup_mask = new_df.apply(
+            lambda r: (r['run_date'].date(), r['ticker'], r['horizon_days']) in existing_keys,
+            axis=1
+        )
+        n_skipped = int(dup_mask.sum())
+        if n_skipped > 0:
+            print(f"ℹ️ [{name}] 오늘 이미 기록된 예측 {n_skipped}건 스킵 (같은 날 재실행 방지)")
+        new_df = new_df[~dup_mask]
+
+    if new_df.empty:
+        return
+
     combined = pd.concat([df, new_df], ignore_index=True)
+
+    # 안전장치 2: 저장 직전 최종 중복 제거 (레이스 컨디션 대비)
+    combined['_run_date_parsed'] = pd.to_datetime(combined['run_date'])
+    combined['_run_date_only'] = combined['_run_date_parsed'].dt.date
+    combined = combined.sort_values('_run_date_parsed')
+    before_n = len(combined)
+    combined = combined.groupby(
+        ['_run_date_only', 'ticker', 'horizon_days'], as_index=False
+    ).head(1)
+    after_n = len(combined)
+    if before_n != after_n:
+        print(f"⚠️ [{name}] 저장 직전 레이스 컨디션 중복 {before_n - after_n}건 추가 제거")
+    combined = combined.drop(columns=['_run_date_parsed', '_run_date_only'])
+    combined = combined.sort_values('run_date').reset_index(drop=True)
+
     save_log(name, combined)
 
 
