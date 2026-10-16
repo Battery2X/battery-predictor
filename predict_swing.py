@@ -12,6 +12,8 @@ from common import (
     settle_predictions, append_predictions, rolling_accuracy, make_prediction_record, edge_label,
 )
 
+from common import add_summary_item, finish_report, evaluate_signal  # v25: 요약 리포트 수집
+
 LOG_NAME = "swing"
 HORIZON_DAYS = 5
 LEVERAGED_THRESHOLD_CAP = 0.08
@@ -86,15 +88,26 @@ def run():
             report += f"    * 📊 실전 적중률: {acc_str}\n"
             report += f"    * 현재가: ${metrics['price']:.2f} | 20일 변동성(연율): {metrics['vol']*100:.1f}%\n"
 
+            _breadth = None
+            if benchmark == 'SMH' and not breadth_df.empty:
+                _l = breadth_df.iloc[-1]
+                _breadth = {'up_share': float(_l['ConstBreadth5']), 'momentum5': float(_l['ConstMomentum5'])}
+            add_summary_item(ticker=ticker, benchmark=benchmark, desc=meta['desc'], direction=meta['direction'],
+                             up_prob=up_prob, raw_up_prob=raw_up, base_rate=result['base_rate'],
+                             edge=result['edge'], price=metrics['price'], vol=metrics['vol'],
+                             drawdown=metrics['drawdown'], ret1=metrics['ret1'], ret5=metrics['ret5'],
+                             price_date=metrics['price_date'], breadth=_breadth,
+                             signal=evaluate_signal(settled_df, ticker))
             new_rows.append(make_prediction_record(run_date, benchmark, ticker, HORIZON_DAYS,
-                                                     up_prob, raw_up, metrics['price']))
+                                                     up_prob, raw_up, metrics['price'],
+                                                     price_date=metrics['price_date']))
         report += "-" * 40 + "\n"
 
     if new_rows:
         append_predictions(LOG_NAME, new_rows)
 
     print("\n" + report)
-    send_telegram(report)
+    finish_report(LOG_NAME, HORIZON_DAYS, report)  # v25: 상세는 파일 저장, 요약은 daily_summary.py
 
 
 if __name__ == "__main__":
