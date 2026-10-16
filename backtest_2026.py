@@ -49,7 +49,7 @@ def auc_score(p, y):
 
 
 def spearman(a, b):
-    a, b = pd.Series(a), pd.Series(b)
+    a, b = pd.Series(np.asarray(a, float)), pd.Series(np.asarray(b, float))   # 인덱스 정렬 어긋남(NaN) 방지
     if len(a) < 5 or a.nunique() < 2 or b.nunique() < 2:
         return np.nan
     return float(a.rank().corr(b.rank()))
