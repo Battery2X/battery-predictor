@@ -17,6 +17,7 @@ import xml.etree.ElementTree as ET
 import urllib.request
 from datetime import datetime, timedelta
 
+import numpy as np
 import pandas as pd
 from pandas.tseries.offsets import BDay
 from zoneinfo import ZoneInfo
@@ -323,11 +324,17 @@ def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_k
             if sub:
                 lines.append("  └ " + " · ".join(sub))
             rk = (risk or {}).get(s['ticker'])
-            if rk and rk.get('move_1d') is not None and rk.get('move_5d') is not None:
+            _fin = lambda v: v is not None and not pd.isna(v) and np.isfinite(v)
+            if rk and _fin(rk.get('move_1d')) and _fin(rk.get('move_5d')):
                 line = (f"  └ 예상 흔들림(1σ): 하루 ±{rk['move_1d']*100:.1f}% · 5일 ±{rk['move_5d']*100:.1f}%"
                         " (3번 중 2번은 이 안, 방향 예측 아님)")
                 if rk.get('regime'):
                     line += f"\n  └ 지금 상태: {_e(rk['regime'])}"
+                if rk.get('data_suspect'):
+                    alt = rk.get('move_5d_incl_suspect')
+                    line += (f"\n  └ ⚠️ 데이터 이상 의심: 최근 1년에 하루 +100%/-50% 이상 움직임 {int(rk['data_suspect'])}건"
+                             " — 분할 미조정 가능성이라 위 흔들림 계산에서는 뺐습니다"
+                             + (f" (포함하면 5일 ±{alt*100:.1f}%, 실제 폭락·폭등이었다면 이쪽이 맞음)" if _fin(alt) else ""))
                 lines.append(line)
         if btc:
             lines.append(f"참고 BTC ${btc['price']:,.0f} · 1일 {_pct(btc['ret1'],1,True)} · 7일 {_pct(btc['ret7'],1,True)}"
@@ -420,4 +427,20 @@ def chunk_sections(sections, limit=TELEGRAM_LIMIT):
             out.append(m[:cut])
             m = m[cut:].lstrip('\n')
         out.append(m)
+    return _balance_tags(out)
+
+
+def _balance_tags(chunks):
+    """강제 분할이 <b>/<i>/<code> 태그 중간을 잘라도 각 조각이 독립적으로 유효한 HTML이 되도록 닫고/다시 연다."""
+    out, carry = [], []
+    for part in chunks:
+        stack = list(carry)
+        for mt in re.finditer(r'<(/?)(b|i|u|s|code|pre)>', part):
+            if mt.group(1):
+                if stack and stack[-1] == mt.group(2):
+                    stack.pop()
+            else:
+                stack.append(mt.group(2))
+        out.append(''.join(f'<{t}>' for t in carry) + part + ''.join(f'</{t}>' for t in reversed(stack)))
+        carry = stack
     return out

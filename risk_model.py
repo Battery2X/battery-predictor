@@ -35,14 +35,41 @@ def _clean_close(close):
         return None
     s = s.replace([np.inf, -np.inf], np.nan).dropna()
     s = s[s > 0]
+    if isinstance(s.index, pd.DatetimeIndex):      # v27: 정렬 안 됨/중복 날짜가 수익률을 엉뚱하게 만들지 않도록
+        if not s.index.is_monotonic_increasing:
+            s = s.sort_index()
+        if s.index.has_duplicates:
+            s = s[~s.index.duplicated(keep='last')]
     return s if len(s) else None
 
 
-def log_returns(close):
+# 일 로그수익률 절댓값이 이 값을 넘으면(+100% / -50% 이상) 3배 ETF의 정상 움직임이 아니라
+# 주식분할·역분할 미조정, 잘못된 시세로 의심한다(SOXL 역대 최악의 하루도 약 -0.4 수준).
+SPLIT_SUSPECT = 0.7
+
+
+def log_returns(close, keep_suspect=False):
+    """일 로그수익률. 기본은 분할 의심 수익률을 제외한다(변동성이 100거래일 넘게 부풀려지는 것 방지)."""
     s = _clean_close(close)
     if s is None or len(s) < 2:
         return None
-    return np.log(s).diff().dropna()
+    r = np.log(s).diff().dropna()
+    if not keep_suspect:
+        r = r[r.abs() <= SPLIT_SUSPECT]
+    return r
+
+
+def suspect_returns(close, lookback=250):
+    """최근 lookback개 수익률 중 분할 의심 건수와 가장 최근 의심 날짜."""
+    r = log_returns(close, keep_suspect=True)
+    if r is None:
+        return 0, None
+    r = r.iloc[-lookback:]
+    bad = r[r.abs() > SPLIT_SUSPECT]
+    if len(bad) == 0:
+        return 0, None
+    last = bad.index[-1]
+    return int(len(bad)), (pd.Timestamp(last) if isinstance(last, pd.Timestamp) else None)
 
 
 def ewma_vol(close, lam=0.94, min_obs=30):
@@ -85,7 +112,14 @@ def risk_snapshot(close):
         high60 = float(s.iloc[-60:].max())
         dd = float(s.iloc[-1] / high60 - 1)
         above200 = bool(s.iloc[-1] > s.iloc[-200:].mean()) if len(s) >= 200 else None
+        n_susp, susp_date = suspect_returns(s)
+        raw_vol = None
+        if n_susp:
+            r_all = log_returns(s, keep_suspect=True)
+            raw_vol = float(np.sqrt((r_all ** 2).ewm(alpha=1 - 0.94, adjust=False).mean().iloc[-1] * TD)) if r_all is not None else None
         snap = {
+            'data_suspect': n_susp, 'data_suspect_date': susp_date,
+            'move_5d_incl_suspect': (raw_vol * np.sqrt(5 / TD)) if raw_vol else None,
             'price_date': pd.Timestamp(s.index[-1]) if isinstance(s.index, pd.DatetimeIndex) else None,
             'vol_ewma': vol, 'vol_rv20': f['vol_rv20'], 'vol_rv60': f['vol_rv60'],
             'move_1d': vol / np.sqrt(TD),              # 하루 1σ
@@ -148,7 +182,17 @@ def load_vol_log(log_dir="logs"):
 
 def save_vol_log(df, log_dir="logs"):
     os.makedirs(log_dir, exist_ok=True)
-    df.to_csv(os.path.join(log_dir, VOL_LOG_NAME), index=False)
+    path = os.path.join(log_dir, VOL_LOG_NAME)
+    tmp = f"{path}.tmp_{os.getpid()}"
+    try:
+        df.to_csv(tmp, index=False)
+        os.replace(tmp, path)          # v27: 원자적 교체 — 쓰는 도중 끊겨도 원본이 잘리지 않음
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
 
 
 def append_vol_forecasts(df, run_date, ticker, close, horizons=(1, 5, 20)):
@@ -185,6 +229,8 @@ def realized_vol_after(close, price_date, horizon_days):
     seg = np.log(s.iloc[pos:pos + int(horizon_days) + 1]).diff().dropna()
     if len(seg) < int(horizon_days):
         return None
+    if (seg.abs() > SPLIT_SUSPECT).any():
+        return np.nan          # 분할 의심 구간: 정산은 끝내되 값은 NaN으로 두어 성적표에서 제외
     return float(np.sqrt((seg ** 2).mean() * TD))
 
 

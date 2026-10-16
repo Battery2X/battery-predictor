@@ -12,6 +12,8 @@ v23.0 변경사항
 4. train_benchmark_model()을 공통 모듈로 이동 (3개 스크립트 중복 제거)
 """
 import os
+import re
+import html
 import json
 import time
 import requests
@@ -274,6 +276,32 @@ def drop_partial_us_bar(df, now_et=None):
     return df
 
 
+def clean_price_frame(df):
+    """
+    가격표 위생 처리(v27, 스트레스 테스트에서 발견): 날짜 오름차순 정렬, 중복 날짜 제거(마지막 값 유지),
+    종가·고가·저가가 유한하지 않거나 0 이하인 행 제거. 정상 데이터에는 아무 영향 없음(no-op).
+    잘못된 시세 한 줄(0원·음수·NaN)이 inf 피처·0나누기·엉뚱한 정산으로 번지는 것을 입구에서 막는다.
+    """
+    if df is None or len(df) == 0:
+        return df
+    try:
+        out = df
+        if not out.index.is_monotonic_increasing:
+            out = out.sort_index()
+        if out.index.has_duplicates:
+            out = out[~out.index.duplicated(keep='last')]
+        cols = [c for c in ('High', 'Low', 'Close') if c in out.columns]
+        vals = out[cols].apply(pd.to_numeric, errors='coerce')
+        ok = np.isfinite(vals).all(axis=1) & (vals > 0).all(axis=1)
+        if not ok.all():
+            print(f"⚠️ 비정상 시세 {int((~ok).sum())}행 제외(0/음수/NaN/inf)")
+            out = out[ok]
+        return out
+    except Exception as e:
+        print(f"⚠️ 가격표 위생 처리 실패(원본 사용): {e}")
+        return df
+
+
 def fetch_ticker_data(ticker, start_date='2022-01-01'):
     tgt = _yf_download_with_retry(ticker, start_date)
     if tgt.empty:
@@ -283,6 +311,7 @@ def fetch_ticker_data(ticker, start_date='2022-01-01'):
         'Low': tgt['Low'].squeeze(),
         'Close': tgt['Close'].squeeze(),
     })
+    out = clean_price_frame(out)
     out = drop_partial_us_bar(out)
     return out if len(out) else None
 
@@ -292,6 +321,14 @@ def fetch_display_metrics(ticker):
     v23.0 버그수정: 현재가/변동성 조회 시 NaN 방지.
     yfinance가 마지막 행에 결측치를 반환하는 경우가 있어 ffill+dropna로 방어한다.
     """
+    try:
+        return _fetch_display_metrics_impl(ticker)
+    except Exception as e:     # v27: 한 종목 시세 문제가 스크립트 전체(=로그 기록)를 죽이지 않도록
+        print(f"⚠️ [{ticker}] 표시용 지표 계산 실패(스킵): {type(e).__name__}: {e}")
+        return None
+
+
+def _fetch_display_metrics_impl(ticker):
     df = fetch_ticker_data(ticker)
     if df is None:
         return None
@@ -484,7 +521,7 @@ def build_target(df, horizon_days, threshold_cap):
 # ============================================================
 # 5) 벤치마크 모델 학습 (공통화) + 확률 보정(calibration)
 # ============================================================
-def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
+def _train_benchmark_model_impl(benchmark, macro_df, horizon_days, threshold_cap,
                            benchmark_multiplier=3, min_train_rows=300, model_params=None,
                            extra_features_df=None, extra_feature_cols=None):
     """
@@ -510,6 +547,7 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
     df = df.ffill().dropna()
     df = build_features(df, benchmark_col=REL_COMPARISON[benchmark])
     df = build_target(df, horizon_days, threshold_cap / benchmark_multiplier)
+    df = df.replace([np.inf, -np.inf], np.nan)   # v27: 0원/결측 가격이 만든 inf 피처가 학습을 죽이지 않도록
 
     feature_cols = FEATURE_COLUMNS + (extra_feature_cols or [])
 
@@ -518,6 +556,9 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
         return None
 
     X, y = df_train[feature_cols], df_train['Target']
+    if y.nunique() < 2:      # v27: 상승/하락 라벨 중 한쪽만 있으면 학습·보정이 의미 없음
+        print(f"⚠️ [{benchmark}] 학습 라벨이 한 클래스뿐 — 이번 회차 스킵")
+        return None
 
     tscv = TimeSeriesSplit(n_splits=3)
     xgb = XGBClassifier(eval_metric='logloss', random_state=42, **model_params)
@@ -525,9 +566,13 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
 
     f1 = prec = rec = 0
     oof_probs, oof_labels = [], []
+    n_ok_folds = 0
     for tr_idx, te_idx in tscv.split(X):
         X_tr, X_te = X.iloc[tr_idx], X.iloc[te_idx]
         y_tr, y_te = y.iloc[tr_idx], y.iloc[te_idx]
+        if y_tr.nunique() < 2:
+            continue          # v27: 학습 구간 라벨이 한 클래스뿐인 폴드는 건너뜀(XGBoost가 ValueError로 죽음)
+        n_ok_folds += 1
         scaler = StandardScaler()
         X_tr_s, X_te_s = scaler.fit_transform(X_tr), scaler.transform(X_te)
 
@@ -542,7 +587,10 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
 
         oof_probs.extend(probs[:, 1].tolist())
         oof_labels.extend(y_te.tolist())
-    f1, prec, rec = f1/3, prec/3, rec/3
+    if n_ok_folds == 0 or len(set(oof_labels)) < 2:
+        print(f"⚠️ [{benchmark}] 유효한 교차검증 폴드가 없거나 OOF 라벨이 한 클래스 — 이번 회차 스킵")
+        return None
+    f1, prec, rec = f1/n_ok_folds, prec/n_ok_folds, rec/n_ok_folds   # 폴드가 3개 다 유효하면 기존(/3)과 동일
 
     # 확률 보정기: OOF (원시확률, 실제라벨) 쌍으로 Isotonic Regression 학습
     calibrator = IsotonicRegression(out_of_bounds='clip', y_min=0.0, y_max=1.0)
@@ -567,6 +615,17 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
     final_probs = (xgb.predict_proba(latest) + lgbm.predict_proba(latest)) / 2
     raw_up_prob = float(final_probs[0][1])
     calibrated_up_prob = float(calibrator.predict([raw_up_prob])[0])
+    # v27: 등온회귀는 표본이 얇은 구간에서 0%/100%를 내놓을 수 있다(실제 로그에도 0.0% 존재). '확률 0%'는
+    # 표본 수십 건으로는 정당화될 수 없으므로 1~99%로 제한한다. 50% 경계는 그대로라 예측 방향(라벨)은 불변이고,
+    # 하락확률 = 1 - 상승확률 이므로 롱/인버스 페어 합 100% 대칭도 유지된다.
+    if not np.isfinite(calibrated_up_prob):
+        print(f"⚠️ [{benchmark}] 보정 확률이 유한하지 않음 — 이번 회차 스킵")
+        return None
+    _unclamped = calibrated_up_prob
+    calibrated_up_prob = min(max(calibrated_up_prob, PROB_FLOOR), 1 - PROB_FLOOR)
+    clamped = bool(abs(_unclamped - calibrated_up_prob) > 1e-12)
+    if clamped:
+        print(f"ℹ️ [{benchmark}] 보정 확률 {_unclamped*100:.1f}% → {calibrated_up_prob*100:.1f}%로 제한(등온회귀 극단값; 과신 신호일 수 있음)")
 
     # 기준선(base rate): 횡보 제외 학습 샘플 중 실제 상승 비율.
     # 모델의 진짜 엣지 = 보정확률 - 기준선. 이 값이 0에 가까우면
@@ -583,7 +642,29 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap,
         'f1': f1, 'prec': prec, 'rec': rec,
         'dead_zone': df['DeadZone_Ratio'].iloc[-1],
         'top_features': top_features,
+        'calib_unclamped': _unclamped * 100, 'calib_clamped': clamped,
     }
+
+
+PROB_FLOOR = 0.01   # 보정 확률의 하한(상한은 1 - 하한)
+LAST_TRAIN_ERRORS = {}   # {벤치마크: 마지막 학습 실패 사유} — 리포트/디버깅용
+
+
+def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap, *args, **kwargs):
+    """
+    v27: 학습 구현(_train_benchmark_model_impl)을 예외로부터 격리하는 얇은 래퍼.
+    한 벤치마크의 학습이 어떤 이유로든 죽어도 None을 돌려줘서, 호출 스크립트가 나머지 벤치마크와
+    그 전에 쌓인 예측 기록을 계속 처리하게 한다(이전엔 예외 하나가 스크립트 전체와 그날 로그 기록을 날렸음).
+    """
+    try:
+        LAST_TRAIN_ERRORS.pop(benchmark, None)
+        return _train_benchmark_model_impl(benchmark, macro_df, horizon_days, threshold_cap, *args, **kwargs)
+    except Exception as e:
+        import traceback as _tb
+        LAST_TRAIN_ERRORS[benchmark] = f"{type(e).__name__}: {e}"
+        print(f"❌ [{benchmark}] 학습 중 예외(이 벤치마크만 스킵): {type(e).__name__}: {e}")
+        print(_tb.format_exc()[-1500:])
+        return None
 
 
 # ============================================================
@@ -611,23 +692,92 @@ def _log_path(name):
     return os.path.join(LOG_DIR, f"predictions_{name}.csv")
 
 
+LOG_NUMERIC_COLS = ['horizon_days', 'predicted_label', 'predicted_up_prob', 'raw_up_prob', 'price_at_prediction',
+                    'actual_price', 'actual_return', 'actual_label', 'correct']
+
+
+def _normalize_log(df):
+    """로그 DataFrame을 표준 형태로: 누락 컬럼 보강, 날짜·숫자 강제 변환, run_date/ticker가 없는 행 제거. (정제 후 df, 제거한 행 수)"""
+    for col in LOG_COLUMNS:
+        if col not in df.columns:
+            df[col] = np.nan
+    df['run_date'] = pd.to_datetime(df['run_date'], errors='coerce')
+    df['target_date'] = pd.to_datetime(df['target_date'], errors='coerce')
+    df['price_date'] = pd.to_datetime(df['price_date'], errors='coerce')
+    for col in LOG_NUMERIC_COLS:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    bad = df['run_date'].isna() | df['ticker'].isna() | (df['ticker'].astype(str).str.strip() == '')
+    n_bad = int(bad.sum())
+    if n_bad:
+        df = df[~bad].reset_index(drop=True)
+    return df, n_bad
+
+
+def _preserve_corrupt(path, move=False):
+    """읽기에 문제가 있던 원본을 덮어쓰기 전에 보존한다(이후 저장이 기록을 날리는 사고 방지)."""
+    try:
+        import shutil
+        dst = f"{path}.corrupt_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        (shutil.move if move else shutil.copy2)(path, dst)
+        return dst
+    except Exception:
+        return None
+
+
 def load_log(name):
+    """
+    v27: 로그가 깨져 있어도 죽지 않는다. 정상 파일은 기존과 동일하게 읽는다.
+    - 일부 행만 문제(날짜/티커 없음): 그 행만 제외하고 원본은 .corrupt_* 로 보존, 정제본을 저장.
+    - 파일 구조 자체가 깨짐(잘린 줄·바이너리 등): 원본 보존 후 읽히는 줄만 살려서(on_bad_lines='skip') 계속.
+    - 하나도 못 살리면 원본을 옮겨두고 빈 로그로 시작(다음 실행이 같은 파일에서 또 죽지 않도록).
+    """
     path = _log_path(name)
-    if os.path.exists(path):
+    if not os.path.exists(path):
+        return pd.DataFrame(columns=LOG_COLUMNS)
+    try:
         df = pd.read_csv(path)
-        df['run_date'] = pd.to_datetime(df['run_date'])
-        df['target_date'] = pd.to_datetime(df['target_date'])
-        # v24.0 이전 로그엔 near_earnings 컬럼이 없을 수 있음 — 하위호환을 위해 보강
-        for col in LOG_COLUMNS:
-            if col not in df.columns:
-                df[col] = np.nan
-        df['price_date'] = pd.to_datetime(df['price_date'], errors='coerce')
+        if 'run_date' not in df.columns or 'ticker' not in df.columns:
+            raise ValueError("필수 컬럼(run_date/ticker) 없음")
+        df, n_bad = _normalize_log(df)
+        if n_bad:
+            dst = _preserve_corrupt(path)
+            print(f"⚠️ [{name}] 로그에서 읽을 수 없는 행 {n_bad}건 제외(원본 보존: {dst})")
+            save_log(name, df)
         return df
-    return pd.DataFrame(columns=LOG_COLUMNS)
+    except Exception as e:
+        print(f"⚠️ [{name}] 예측 로그 읽기 실패({type(e).__name__}: {e}) — 원본 보존 후 복구 시도")
+        dst = _preserve_corrupt(path)
+        try:
+            df = pd.read_csv(path, engine='python', on_bad_lines='skip')
+            if 'run_date' in df.columns and 'ticker' in df.columns:
+                df, _ = _normalize_log(df)
+                if len(df):
+                    print(f"ℹ️ [{name}] 읽히는 {len(df)}행만 살려 계속합니다(원본: {dst})")
+                    save_log(name, df)
+                    return df
+        except Exception as e2:
+            print(f"⚠️ [{name}] 복구 실패: {e2}")
+        _preserve_corrupt(path, move=True)
+        print(f"⚠️ [{name}] 살릴 행이 없어 빈 로그로 시작합니다(원본은 .corrupt_* 로 보존됨)")
+        return pd.DataFrame(columns=LOG_COLUMNS)
+
+
+def atomic_to_csv(df, path):
+    """임시 파일에 완전히 쓴 뒤 os.replace로 교체한다(v27). 쓰는 도중 프로세스가 끊겨도 원본이 반쯤 잘리지 않는다."""
+    tmp = f"{path}.tmp_{os.getpid()}"
+    try:
+        df.to_csv(tmp, index=False)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
 
 
 def save_log(name, df):
-    df.to_csv(_log_path(name), index=False)
+    atomic_to_csv(df, _log_path(name))
 
 
 def _fallback_price_date(run_date):
@@ -648,17 +798,29 @@ def compute_aligned_outcome(price_df, price_date, horizon_days, logged_entry_pri
     entry 가격은 같은 조정주가 시리즈의 price_date 종가를 쓰되(배당 조정 편향 방지),
     로그 기록가와 1.5% 넘게 어긋나면(날짜 불일치 의심) 로그 기록가를 쓴다(구 방식).
     """
-    close = price_df['Close']
+    try:
+        h = int(horizon_days)
+    except Exception:
+        return None
+    if h < 1 or pd.isna(price_date):
+        return None
+    close = pd.to_numeric(price_df['Close'], errors='coerce')
+    close = close[np.isfinite(close) & (close > 0)]          # v27: 0/음수/NaN 종가는 거래 봉으로 취급하지 않음
+    if not close.index.is_monotonic_increasing:
+        close = close.sort_index()
+    if close.index.has_duplicates:
+        close = close[~close.index.duplicated(keep='last')]
     pos = close.index.searchsorted(pd.Timestamp(price_date), side='right') - 1
     if pos < 0:
         return None
-    tpos = pos + int(horizon_days)
+    tpos = pos + h
     if tpos >= len(close):
         return None
     entry = float(close.iloc[pos])
-    if logged_entry_price is not None and not pd.isna(logged_entry_price):
-        if abs(entry / float(logged_entry_price) - 1) > entry_tol:
-            entry = float(logged_entry_price)
+    logged = pd.to_numeric(logged_entry_price, errors='coerce') if logged_entry_price is not None else np.nan
+    if np.isfinite(logged) and logged > 0:
+        if abs(entry / float(logged) - 1) > entry_tol:
+            entry = float(logged)
     actual_price = float(close.iloc[tpos])
     actual_ret = (actual_price - entry) / entry
     return {'actual_price': actual_price, 'actual_return': actual_ret,
@@ -667,49 +829,92 @@ def compute_aligned_outcome(price_df, price_date, horizon_days, logged_entry_pri
 
 
 def settle_predictions(name):
-    """호라이즌이 지난 과거 예측의 실제 결과를 확인해서 채워넣는다 (v25: 모델 목표와 같은 거래일 기준)."""
+    """
+    호라이즌이 지난 과거 예측의 실제 결과를 확인해서 채워넣는다 (v25: 모델 목표와 같은 거래일 기준).
+    v27: 행 단위로 격리한다. 오염된 한 행(predicted_label/horizon NaN, 진입가 0 등)이 예외를 일으켜도
+    그 행만 건너뛰고 나머지는 정상 정산한다(이전엔 한 행 때문에 이후 모든 실행이 영구히 죽었음).
+    """
     df = load_log(name)
     if df.empty:
         return df
     today = pd.Timestamp.now().normalize()
+    poison = []     # 정산 불가(오염) 행의 인덱스
 
     # 1) 미정산 행: price_date 보강 + target_date를 '가격일 + h영업일'로 교정
-    pending = df['actual_label'].isna()
+    pending_idx = list(df.index[df['actual_label'].isna()])
     changed = False
-    if pending.any():
-        eff = df.loc[pending, 'price_date'].copy()
-        miss = eff.isna()
-        if miss.any():
-            eff[miss] = df.loc[pending, 'run_date'][miss].apply(_fallback_price_date)
-        new_target = pd.Series([pd.Timestamp(d) + BDay(int(h)) for d, h in
-                                zip(eff, df.loc[pending, 'horizon_days'])], index=eff.index)
-        if not (df.loc[pending, 'price_date'].equals(eff) and df.loc[pending, 'target_date'].equals(new_target)):
+    for idx in pending_idx:
+        try:
+            pdv = df.at[idx, 'price_date']
+            if pd.isna(pdv):
+                pdv = _fallback_price_date(df.at[idx, 'run_date'])
+            tdv = pd.Timestamp(pdv) + BDay(int(df.at[idx, 'horizon_days']))
+        except Exception:
+            poison.append(idx)
+            continue
+        if not (pd.notna(df.at[idx, 'price_date']) and df.at[idx, 'price_date'] == pdv
+                and pd.notna(df.at[idx, 'target_date']) and df.at[idx, 'target_date'] == tdv):
             changed = True
-        df.loc[pending, 'price_date'] = eff
-        df.loc[pending, 'target_date'] = new_target
+        df.at[idx, 'price_date'] = pdv
+        df.at[idx, 'target_date'] = tdv
 
     mask_unresolved = df['actual_label'].isna() & (df['target_date'] <= today)
+    if poison:
+        mask_unresolved.loc[poison] = False
     for ticker in df.loc[mask_unresolved, 'ticker'].unique():
-        price_df = fetch_ticker_data(ticker)
+        try:
+            price_df = fetch_ticker_data(ticker)
+        except Exception as e:
+            print(f"⚠️ [{ticker}] 정산용 시세 조회 실패(보류): {e}")
+            continue
         if price_df is None:
             continue
         price_df = price_df.ffill().dropna()
 
         rows = df[(df['ticker'] == ticker) & mask_unresolved]
         for idx, row in rows.iterrows():
-            res = compute_aligned_outcome(price_df, row['price_date'], row['horizon_days'],
-                                          row['price_at_prediction'])
-            if res is None:
-                continue
-            df.loc[idx, 'actual_price'] = res['actual_price']
-            df.loc[idx, 'actual_return'] = res['actual_return']
-            df.loc[idx, 'actual_label'] = res['actual_label']
-            df.loc[idx, 'correct'] = int(res['actual_label'] == int(row['predicted_label']))
-            changed = True
+            try:
+                if pd.isna(row['predicted_label']):
+                    raise ValueError("predicted_label 없음")
+                res = compute_aligned_outcome(price_df, row['price_date'], row['horizon_days'],
+                                              row['price_at_prediction'])
+                if res is None:
+                    continue
+                df.loc[idx, 'actual_price'] = res['actual_price']
+                df.loc[idx, 'actual_return'] = res['actual_return']
+                df.loc[idx, 'actual_label'] = res['actual_label']
+                df.loc[idx, 'correct'] = int(res['actual_label'] == int(row['predicted_label']))
+                changed = True
+            except Exception as e:
+                poison.append(idx)
+                print(f"⚠️ [{name}] 정산 불가 행 격리: {ticker} run_date={row.get('run_date')} ({type(e).__name__}: {e})")
+    if poison:
+        print(f"⚠️ [{name}] 오염된 행 {len(set(poison))}건은 정산에서 제외했습니다(로그 파일은 그대로 두었으니 확인해 주세요).")
 
     if changed:
         save_log(name, df)
     return df
+
+
+def _drop_invalid_records(new_df, name=""):
+    """
+    기록 전 검증(v27): 상승확률이 유한하고 0~100이며, 진입가가 유한한 양수이고, 호라이즌이 양의 정수이며,
+    run_date·ticker가 있는 행만 로그에 남긴다. 나머지는 그 행만 거부하고 이유를 출력한다.
+    (이전엔 NaN 확률이 '하락 예측'으로, 130%·음수 가격이 그대로 로그에 기록됐다.)
+    """
+    num = lambda c: pd.to_numeric(new_df[c], errors='coerce') if c in new_df.columns else pd.Series(np.nan, index=new_df.index)
+    up, price, hz = num('predicted_up_prob'), num('price_at_prediction'), num('horizon_days')
+    reasons = pd.Series('', index=new_df.index)
+    reasons[~np.isfinite(up) | (up < 0) | (up > 100)] += '상승확률 범위/NaN '
+    reasons[~np.isfinite(price) | (price <= 0)] += '진입가 비정상 '
+    reasons[~np.isfinite(hz) | (hz < 1)] += '호라이즌 비정상 '
+    reasons[new_df['run_date'].isna()] += 'run_date 없음 '
+    tk = new_df['ticker'] if 'ticker' in new_df.columns else pd.Series(np.nan, index=new_df.index)
+    reasons[tk.isna() | (tk.astype(str).str.strip() == '')] += 'ticker 없음 '
+    bad = reasons != ''
+    for i in new_df.index[bad]:
+        print(f"⚠️ [{name}] 기록 거부: {new_df.at[i, 'ticker'] if 'ticker' in new_df.columns else '?'} — {reasons[i].strip()}")
+    return new_df[~bad]
 
 
 def append_predictions(name, rows):
@@ -736,7 +941,10 @@ def append_predictions(name, rows):
     if new_df.empty:
         return
 
-    new_df['run_date'] = pd.to_datetime(new_df['run_date'])
+    new_df['run_date'] = pd.to_datetime(new_df['run_date'], errors='coerce')
+    new_df = _drop_invalid_records(new_df, name)
+    if new_df.empty:
+        return
 
     if 'price_date' not in new_df.columns:
         new_df['price_date'] = pd.NaT
@@ -797,6 +1005,7 @@ def wilson_ci(k, n, z=1.96):
     """
     if n <= 0:
         return 0.0, 100.0
+    k = min(max(k, 0), n)      # v27: 비정상 입력(k>n, k<0)에서도 0~100% 구간을 돌려줌
     p = k / n
     denom = 1 + z**2 / n
     center = (p + z**2 / (2 * n)) / denom
@@ -854,12 +1063,14 @@ def evaluate_signal(df, ticker, min_eff=15):
             'insufficient'  독립 관측이 min_eff 미만 (아직 판정 불가)
     정산 완료 행이 없으면 None.
     """
-    sub = df[(df['ticker'] == ticker) & df['correct'].notna()]
+    sub = df[(df['ticker'] == ticker) & df['correct'].notna()].copy()
+    sub['correct'] = pd.to_numeric(sub['correct'], errors='coerce')     # v27: 오염된 값(문자 등)에 죽지 않도록
+    sub = sub[sub['correct'].notna()]
     if sub.empty:
         return None
     n = len(sub)
-    h = int(pd.to_numeric(sub['horizon_days'], errors='coerce').dropna().median() or 1)
-    h = max(h, 1)
+    hv = pd.to_numeric(sub['horizon_days'], errors='coerce').dropna()
+    h = max(int(hv.median()) if len(hv) else 1, 1)
     acc = float(sub['correct'].mean())
     up_rate = float((sub['actual_label'] == 1).mean())
     naive_best = max(up_rate, 1 - up_rate)
@@ -923,7 +1134,7 @@ def finish_report(log_name, horizon_days, report_text):
 
 def make_prediction_record(run_date, benchmark, ticker, horizon_days, up_prob, raw_up_prob, price,
                             near_earnings=False, price_date=None):
-    predicted_label = 1 if up_prob >= 50 else 0
+    predicted_label = (1 if up_prob >= 50 else 0) if (up_prob is not None and np.isfinite(up_prob)) else np.nan   # v27: NaN 확률을 '하락'으로 기록하지 않음
     # v25: 목표일은 '예측에 쓴 마지막 종가일 + h영업일'. (이전엔 실행일 기준이라 하루씩 밀려 채점됐음)
     if price_date is not None and not pd.isna(price_date):
         pdate = pd.Timestamp(price_date).normalize()
@@ -945,17 +1156,83 @@ def make_prediction_record(run_date, benchmark, ticker, horizon_days, up_prob, r
 # ============================================================
 # 8) 텔레그램 알림
 # ============================================================
+_TG_TAG = re.compile(r"</?(?:b|i|u|s|em|strong|code|pre|a)(?:\s[^>]*)?>", re.I)
+TG_MAX = 4000   # 텔레그램 한도(4096)보다 여유
+
+
+def _tg_plain(msg):
+    """HTML 모드 실패 시 재전송용: 서식 태그만 제거(traceback의 <module> 같은 꺾쇠는 보존)하고 엔티티를 되돌린다."""
+    return html.unescape(_TG_TAG.sub('', str(msg)))
+
+
+def _tg_split(msg, limit=TG_MAX):
+    """한도를 넘는 메시지를 줄 경계에서 나눈다. 청크마다 열린 <b>/<i>/<code> 태그를 닫고 다음 청크에서 다시 연다."""
+    msg = str(msg)
+    if len(msg) <= limit:
+        return [msg]
+    parts, cur = [], ''
+    for line in msg.split('\n'):
+        while len(line) > limit:
+            if cur:
+                parts.append(cur); cur = ''
+            parts.append(line[:limit]); line = line[limit:]
+        add = line if not cur else '\n' + line
+        if cur and len(cur) + len(add) > limit:
+            parts.append(cur); cur = line
+        else:
+            cur += add
+    if cur:
+        parts.append(cur)
+    out, carry = [], []
+    for part in parts:
+        text = ''.join(f'<{t}>' for t in carry) + part
+        stack = list(carry)
+        for m in re.finditer(r'<(/?)(b|i|u|s|code|pre)>', part):
+            if m.group(1):
+                if stack and stack[-1] == m.group(2):
+                    stack.pop()
+            else:
+                stack.append(m.group(2))
+        carry = stack
+        out.append(text + ''.join(f'</{t}>' for t in reversed(stack)))
+    return out
+
+
 def send_telegram(message):
+    """
+    v27: 응답 코드를 확인한다. HTML 파싱 실패(400) 등으로 거부되면 태그를 제거한 평문으로 한 번 더 보낸다
+    (이전엔 400이어도 조용히 유실됐고, 에러 알림에 traceback의 <module> 같은 꺾쇠가 있으면 알림 자체가 사라질 수 있었음).
+    반환: 모든 조각이 전달되면 True.
+    """
     token = os.environ.get('TELEGRAM_TOKEN')
     chat_id = os.environ.get('TELEGRAM_CHAT_ID')
     if not token or not chat_id:
         print("⚠️ TELEGRAM_TOKEN / TELEGRAM_CHAT_ID 미설정 — 콘솔에만 출력합니다.")
-        return
+        return False
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    try:
-        requests.post(url, data={"chat_id": chat_id, "text": message, "parse_mode": "HTML"}, timeout=10)
-    except Exception as e:
-        print(f"⚠️ 텔레그램 전송 실패: {e}")
+
+    def _post(text, html_mode):
+        data = {"chat_id": chat_id, "text": text}
+        if html_mode:
+            data["parse_mode"] = "HTML"
+        r = requests.post(url, data=data, timeout=10)
+        code = getattr(r, 'status_code', 200)
+        return code == 200, code, getattr(r, 'text', '')
+
+    all_ok = True
+    for chunk in _tg_split(message):
+        try:
+            ok, code, body = _post(chunk, True)
+            if not ok:
+                print(f"⚠️ 텔레그램 HTML 전송 거부({code}): {str(body)[:160]} — 평문으로 재전송")
+                ok, code, body = _post(_tg_plain(chunk), False)
+                if not ok:
+                    print(f"❌ 텔레그램 평문 재전송도 실패({code}): {str(body)[:160]}")
+            all_ok &= ok
+        except Exception as e:
+            print(f"⚠️ 텔레그램 전송 실패: {e}")
+            all_ok = False
+    return all_ok
 
 
 def direction_label(up_prob, down_prob):

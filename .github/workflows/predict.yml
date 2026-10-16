@@ -109,3 +109,12 @@ jobs:
           else
             echo "변경된 로그 없음 — 커밋 스킵"
           fi
+
+      # ---- 건강 점검: 분석 단계가 전부 continue-on-error 라서 '조용한 실패'를 여기서 잡는다 (v27) ----
+      - name: 🩺 실행 건강 점검 (health_check.py — 로그 누락·정체 시 텔레그램 알림 + 실패 처리)
+        if: always()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: python health_check.py
