@@ -7,7 +7,7 @@ on:
         description: "resettle = 과거 정산 재채점 / btc = 비트코인 선행성 검정 / backtest = 워크포워드 백테스트(읽기 전용)"
         required: true
         type: choice
-        options: [resettle, btc, backtest]
+        options: [resettle, btc, backtest, variants]
       bt_start:
         description: "backtest 전용: 시작일(기본 2026-01-01)"
         required: false
@@ -16,6 +16,10 @@ on:
         description: "backtest 전용: 기준일 간격(거래일, 기본 3)"
         required: false
         default: "3"
+      bt_variants:
+        description: "variants 전용: 쉼표로 구분한 변형 접두어(예: V0,V1). 비우면 전부"
+        required: false
+        default: ""
       apply:
         description: "resettle 전용: true 면 로그를 실제로 덮어씀(백업 생성). false 면 dry-run"
         required: false
@@ -82,6 +86,20 @@ jobs:
         run: |
           mkdir -p reports
           python backtest_2026.py "${{ inputs.bt_start }}" "${{ inputs.bt_step }}" reports
+      - name: 라벨·보정 수정안 비교 백테스트 (로그는 건드리지 않음)
+        if: ${{ inputs.tool == 'variants' }}
+        env:
+          BT_MAX_SECONDS: "4800"
+          BT_VARIANTS: ${{ inputs.bt_variants }}
+        run: |
+          mkdir -p reports
+          python backtest_variants.py "${{ inputs.bt_start }}" "${{ inputs.bt_step }}" reports
+      - name: 변형 비교 결과 저장 (reports/ 에만 커밋)
+        if: ${{ inputs.tool == 'variants' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          python push_logs.py "${GITHUB_REF_NAME}" "chore: variants backtest report [skip ci]" reports/backtest_variants.txt reports/backtest_variants_preds.tsv
       - name: 백테스트 결과 저장 (reports/ 에만 커밋)
         if: ${{ inputs.tool == 'backtest' }}
         run: |
