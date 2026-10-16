@@ -86,11 +86,20 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: python predict_stock_position.py
 
+      # ---- 쉬운 요약 리포트 (6개 실행 후, 로그는 읽기만 함 → 검증 시계 영향 없음) ----
+      - name: 🧭 쉬운 요약 리포트 (daily_summary.py, 위험판·일정·핫이슈·뉴스)
+        continue-on-error: true
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: python daily_summary.py
+
       - name: 📝 예측 로그 커밋 (실전 적중률 추적용 + 저장소 활성 상태 유지)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add logs/ 2>/dev/null || true
+          git add logs/ reports/ 2>/dev/null || true
           if ! git diff --staged --quiet; then
             git commit -m "chore: update prediction logs [skip ci]"
             # concurrency 설정으로 겹치는 실행은 막았지만, 혹시 모를 충돌에

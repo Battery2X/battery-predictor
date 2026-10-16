@@ -12,13 +12,15 @@ v23.0 변경사항
 4. train_benchmark_model()을 공통 모듈로 이동 (3개 스크립트 중복 제거)
 """
 import os
+import json
 import time
 import requests
 import yfinance as yf
 import pandas as pd
 import numpy as np
 import warnings
-from datetime import datetime
+from datetime import datetime, time as dtime
+from zoneinfo import ZoneInfo
 from pandas.tseries.offsets import BDay
 from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import f1_score, precision_score, recall_score
@@ -49,10 +51,14 @@ REL_COMPARISON = {'QQQ': 'SPY', 'SMH': 'SPY', 'SPY': None,
 STOCK_TICKERS = ['AAPL', 'NVDA', 'TSLA']
 
 # 종목별 다음 실적 발표(예정)일 — 확정 아닌 예상치 포함, 주기적으로 갱신 필요
+# 날짜는 "미국 현지 발표일"(장 마감 후 발표면 한국시간으론 다음날 새벽).
+# 2026-10-16 검증: TSLA 10/21 (회사 IR 확정 — days.to 및 기사 2곳 일치),
+#                  NVDA 11/18 (추정, 공식 확정 전 — 캘린더 2곳 일치), AAPL 10/29 (캘린더 일치).
+# 이전 값(TSLA 10/28, NVDA 8/26)은 오래되었거나 틀렸음 → 실적 경고가 엉뚱한 날 떴음.
 STOCK_EARNINGS_DATES = {
     'AAPL': '2026-10-29',
-    'NVDA': '2026-08-26',
-    'TSLA': '2026-10-28',
+    'NVDA': '2026-11-18',
+    'TSLA': '2026-10-21',
 }
 
 
@@ -131,6 +137,18 @@ MARKET_EVENTS = {
                    "consensus": "동결 vs 25bp 인상 확률 팽팽 (동결 62~70%, 인상 25~30%)"},
     "2026-08-26": {"desc": "NVIDIA FY2027 Q2 실적 발표 (장마감 후)",
                    "consensus": "컨센서스 EPS $2.08"},
+    # --- 아래는 2026-10-16 추가 (앞으로의 일정). 컨센서스는 수집하지 않음 ---
+    # Tesla/Apple/NVIDIA 실적은 STOCK_EARNINGS_DATES 에서 따로 표시하므로 여기엔 넣지 않는다(중복 방지).
+    "2026-10-28": {"desc": "FOMC 금리 결정 (10/27~28 회의, 한국시간 10/29 새벽 발표)",
+                   "consensus": "CPI 상회 후 인상 우려 확대 — 인상 확률 보도마다 상이(약 30~46%)"},
+    "2026-10-29": {"desc": "빅테크 실적 집중 (MSFT·Meta 10/28, Amazon·Intel 10/29 미국 마감 후)",
+                   "consensus": "캘린더 기준, 날짜 확인 필요"},
+    "2026-11-03": {"desc": "미국 중간선거",
+                   "consensus": "일정 확정"},
+    "2026-11-06": {"desc": "미국 10월 고용지표",
+                   "consensus": "일정 보도 기준(확인 필요)"},
+    "2026-11-10": {"desc": "미국 10월 CPI",
+                   "consensus": "일정 보도 기준(확인 필요)"},
 }
 
 
@@ -237,15 +255,36 @@ def fetch_macro_data(start_date='2022-01-01'):
     return macro_df
 
 
+US_EASTERN = ZoneInfo('America/New_York')
+
+
+def drop_partial_us_bar(df, now_et=None):
+    """
+    미국 정규장이 진행 중일 때 yfinance는 "오늘" 일봉을 장중 가격으로 돌려준다.
+    그 값을 종가처럼 쓰면 예측·정산이 오염되므로(2026-08-17 14:27 UTC 실행분이 실제로 그랬음),
+    '오늘(미국 동부 기준) 봉'이 있고 아직 16:00 ET 전이면 마지막 행을 버린다.
+    주말·공휴일엔 오늘 봉이 없으므로 아무것도 버리지 않는다.
+    """
+    if df is None or len(df) == 0:
+        return df
+    now_et = now_et or datetime.now(US_EASTERN)
+    last_date = pd.Timestamp(df.index[-1]).normalize()
+    if last_date == pd.Timestamp(now_et.date()) and now_et.time() < dtime(16, 0):
+        return df.iloc[:-1]
+    return df
+
+
 def fetch_ticker_data(ticker, start_date='2022-01-01'):
     tgt = _yf_download_with_retry(ticker, start_date)
     if tgt.empty:
         return None
-    return pd.DataFrame({
+    out = pd.DataFrame({
         'High': tgt['High'].squeeze(),
         'Low': tgt['Low'].squeeze(),
         'Close': tgt['Close'].squeeze(),
     })
+    out = drop_partial_us_bar(out)
+    return out if len(out) else None
 
 
 def fetch_display_metrics(ticker):
@@ -263,7 +302,15 @@ def fetch_display_metrics(ticker):
     vol = df['Close'].pct_change().rolling(20).std().iloc[-1] * (252 ** 0.5)
     if pd.isna(price) or pd.isna(vol):
         return None
-    return {'price': price, 'vol': vol, 'df': df}
+    close = df['Close']
+    high_60d = close.tail(60).max()          # 최근 60거래일 종가 고점
+    drawdown = price / high_60d - 1 if high_60d and not pd.isna(high_60d) else np.nan
+    ret5 = close.iloc[-1] / close.iloc[-6] - 1 if len(close) > 5 else np.nan
+    ret1 = close.iloc[-1] / close.iloc[-2] - 1 if len(close) > 1 else np.nan
+    return {'price': price, 'vol': vol, 'df': df,
+            'price_date': pd.Timestamp(df.index[-1]).normalize(),   # 이 가격이 속한 거래일(종가일)
+            'high_60d': float(high_60d), 'drawdown': float(drawdown),
+            'ret1': float(ret1), 'ret5': float(ret5)}
 
 
 def fetch_analyst_momentum_features(ticker, start_date='2022-01-01'):
@@ -555,7 +602,8 @@ def apply_direction(benchmark_up_prob, benchmark_down_prob, direction):
 LOG_DIR = "logs"
 LOG_COLUMNS = ['run_date', 'benchmark', 'ticker', 'horizon_days', 'predicted_label',
                'predicted_up_prob', 'raw_up_prob', 'price_at_prediction', 'target_date',
-               'actual_price', 'actual_return', 'actual_label', 'correct', 'near_earnings']
+               'actual_price', 'actual_return', 'actual_label', 'correct', 'near_earnings',
+               'price_date']   # v25: 예측에 쓴 마지막 종가일(구 로그엔 없음 → 아래 폴백으로 보강)
 
 
 def _log_path(name):
@@ -573,6 +621,7 @@ def load_log(name):
         for col in LOG_COLUMNS:
             if col not in df.columns:
                 df[col] = np.nan
+        df['price_date'] = pd.to_datetime(df['price_date'], errors='coerce')
         return df
     return pd.DataFrame(columns=LOG_COLUMNS)
 
@@ -581,16 +630,65 @@ def save_log(name, df):
     df.to_csv(_log_path(name), index=False)
 
 
+def _fallback_price_date(run_date):
+    """
+    price_date 기록이 없는 과거 행용 폴백: 실행 시점에 확보된 마지막 종가일 = 실행일 직전 영업일.
+    (화~금 실행 → 전날 종가, 토·일·월 실행 → 직전 금요일 종가. 공휴일은 정산 때 searchsorted가 보정)
+    """
+    return pd.Timestamp(run_date).normalize() - BDay(1)
+
+
+def compute_aligned_outcome(price_df, price_date, horizon_days, logged_entry_price=None, entry_tol=0.015):
+    """
+    모델이 학습한 목표(종가 t → t+h '거래일' 뒤 종가)와 똑같은 기준으로 실제 결과를 계산한다.
+    v24 이전 정산은 '실행일 + h영업일 이후 첫 종가'를 써서, 화~금 실행분이 h+1일 수익률로 채점됐다.
+
+    price_df: 'Close' 컬럼, 날짜 오름차순. price_date: 예측에 쓴 마지막 종가일.
+    아직 h거래일이 지나지 않았으면 None.
+    entry 가격은 같은 조정주가 시리즈의 price_date 종가를 쓰되(배당 조정 편향 방지),
+    로그 기록가와 1.5% 넘게 어긋나면(날짜 불일치 의심) 로그 기록가를 쓴다(구 방식).
+    """
+    close = price_df['Close']
+    pos = close.index.searchsorted(pd.Timestamp(price_date), side='right') - 1
+    if pos < 0:
+        return None
+    tpos = pos + int(horizon_days)
+    if tpos >= len(close):
+        return None
+    entry = float(close.iloc[pos])
+    if logged_entry_price is not None and not pd.isna(logged_entry_price):
+        if abs(entry / float(logged_entry_price) - 1) > entry_tol:
+            entry = float(logged_entry_price)
+    actual_price = float(close.iloc[tpos])
+    actual_ret = (actual_price - entry) / entry
+    return {'actual_price': actual_price, 'actual_return': actual_ret,
+            'actual_label': 1 if actual_ret > 0 else 0,
+            'target_used': pd.Timestamp(close.index[tpos]).normalize()}
+
+
 def settle_predictions(name):
-    """호라이즌이 지난 과거 예측의 실제 결과를 확인해서 채워넣는다."""
+    """호라이즌이 지난 과거 예측의 실제 결과를 확인해서 채워넣는다 (v25: 모델 목표와 같은 거래일 기준)."""
     df = load_log(name)
     if df.empty:
         return df
     today = pd.Timestamp.now().normalize()
-    mask_unresolved = df['actual_label'].isna() & (df['target_date'] <= today)
-    if not mask_unresolved.any():
-        return df
 
+    # 1) 미정산 행: price_date 보강 + target_date를 '가격일 + h영업일'로 교정
+    pending = df['actual_label'].isna()
+    changed = False
+    if pending.any():
+        eff = df.loc[pending, 'price_date'].copy()
+        miss = eff.isna()
+        if miss.any():
+            eff[miss] = df.loc[pending, 'run_date'][miss].apply(_fallback_price_date)
+        new_target = pd.Series([pd.Timestamp(d) + BDay(int(h)) for d, h in
+                                zip(eff, df.loc[pending, 'horizon_days'])], index=eff.index)
+        if not (df.loc[pending, 'price_date'].equals(eff) and df.loc[pending, 'target_date'].equals(new_target)):
+            changed = True
+        df.loc[pending, 'price_date'] = eff
+        df.loc[pending, 'target_date'] = new_target
+
+    mask_unresolved = df['actual_label'].isna() & (df['target_date'] <= today)
     for ticker in df.loc[mask_unresolved, 'ticker'].unique():
         price_df = fetch_ticker_data(ticker)
         if price_df is None:
@@ -599,20 +697,18 @@ def settle_predictions(name):
 
         rows = df[(df['ticker'] == ticker) & mask_unresolved]
         for idx, row in rows.iterrows():
-            future_prices = price_df.loc[price_df.index >= row['target_date'], 'Close']
-            if future_prices.empty:
+            res = compute_aligned_outcome(price_df, row['price_date'], row['horizon_days'],
+                                          row['price_at_prediction'])
+            if res is None:
                 continue
-            actual_price = future_prices.iloc[0]
-            entry_price = row['price_at_prediction']
-            actual_ret = (actual_price - entry_price) / entry_price
-            actual_label = 1 if actual_ret > 0 else 0
-            correct = int(actual_label == int(row['predicted_label']))
-            df.loc[idx, 'actual_price'] = actual_price
-            df.loc[idx, 'actual_return'] = actual_ret
-            df.loc[idx, 'actual_label'] = actual_label
-            df.loc[idx, 'correct'] = correct
+            df.loc[idx, 'actual_price'] = res['actual_price']
+            df.loc[idx, 'actual_return'] = res['actual_return']
+            df.loc[idx, 'actual_label'] = res['actual_label']
+            df.loc[idx, 'correct'] = int(res['actual_label'] == int(row['predicted_label']))
+            changed = True
 
-    save_log(name, df)
+    if changed:
+        save_log(name, df)
     return df
 
 
@@ -642,12 +738,25 @@ def append_predictions(name, rows):
 
     new_df['run_date'] = pd.to_datetime(new_df['run_date'])
 
+    if 'price_date' not in new_df.columns:
+        new_df['price_date'] = pd.NaT
+    new_df['price_date'] = pd.to_datetime(new_df['price_date'], errors='coerce')
+
     if not df.empty:
         existing_keys = set(
             zip(df['run_date'].dt.date, df['ticker'], df['horizon_days'])
         )
+        # v25: '같은 종가 기준' 예측도 중복으로 본다(토요일 실행과 월요일 실행은 둘 다 금요일 종가 기준 =
+        # 같은 정보). 구 로그 행은 price_date가 없어 폴백(직전 영업일)으로 계산.
+        df_pd = df['price_date'].copy()
+        miss = df_pd.isna()
+        if miss.any():
+            df_pd[miss] = df.loc[miss, 'run_date'].apply(_fallback_price_date)
+        existing_pd_keys = set(zip(df_pd.dt.date, df['ticker'], df['horizon_days']))
         dup_mask = new_df.apply(
-            lambda r: (r['run_date'].date(), r['ticker'], r['horizon_days']) in existing_keys,
+            lambda r: ((r['run_date'].date(), r['ticker'], r['horizon_days']) in existing_keys) or
+                      (pd.notna(r['price_date']) and
+                       (r['price_date'].date(), r['ticker'], r['horizon_days']) in existing_pd_keys),
             axis=1
         )
         n_skipped = int(dup_mask.sum())
@@ -730,11 +839,98 @@ def rolling_accuracy_by_earnings(df, ticker, window=20, min_n=3):
     return result
 
 
+def evaluate_signal(df, ticker, min_eff=15):
+    """
+    "이 신호를 믿어도 되는가"를 엄격하게 판정한다 (v25, 표시 전용 — 예측 모델과 무관).
+
+    기존 rolling_accuracy 의 문제 두 가지를 바로잡는다.
+      1) 겹치는 표본: 5일·20일 예측은 연속된 행끼리 거의 같은 구간을 공유한다.
+         독립 관측 수는 n 이 아니라 n // 호라이즌 이다 (20일 예측 20행 ≈ 독립 1건).
+      2) 비교 기준: 학습 기준선이 아니라 "그 기간 한쪽만 계속 찍었을 때의 최고 적중률"
+         (naive_best)과 비교한다. 항상 상승만 찍어도 나오는 점수를 넘어야 실력이다.
+
+    status: 'pass'  독립 관측 n_eff >= min_eff 이고 Wilson 95% 하한 > naive_best
+            'fail'  표본은 충분한데 통과 못 함
+            'insufficient'  독립 관측이 min_eff 미만 (아직 판정 불가)
+    정산 완료 행이 없으면 None.
+    """
+    sub = df[(df['ticker'] == ticker) & df['correct'].notna()]
+    if sub.empty:
+        return None
+    n = len(sub)
+    h = int(pd.to_numeric(sub['horizon_days'], errors='coerce').dropna().median() or 1)
+    h = max(h, 1)
+    acc = float(sub['correct'].mean())
+    up_rate = float((sub['actual_label'] == 1).mean())
+    naive_best = max(up_rate, 1 - up_rate)
+    n_eff = max(n // h, 1)
+    k_eff = int(round(acc * n_eff))
+    lo, hi = wilson_ci(k_eff, n_eff)
+    pred_up_share = float((sub['predicted_label'] == 1).mean())
+    if n_eff < min_eff:
+        status = 'insufficient'
+    else:
+        status = 'pass' if lo / 100 > naive_best else 'fail'
+    return {'n': n, 'n_eff': n_eff, 'horizon': h, 'accuracy': acc * 100,
+            'up_rate': up_rate * 100, 'naive_best': naive_best * 100,
+            'edge_vs_naive': (acc - naive_best) * 100,
+            'ci_low': lo, 'ci_high': hi,
+            'pred_up_share': pred_up_share * 100,
+            'one_sided': bool(pred_up_share >= 0.9 or pred_up_share <= 0.1),
+            'status': status}
+
+
+# ---- 요약 리포트용 수집기 (6개 예측 스크립트가 각자 채우고, daily_summary.py 가 읽는다) ----
+REPORT_DIR = "reports"
+_SUMMARY_ITEMS = []
+
+
+def add_summary_item(**kwargs):
+    """각 스크립트가 종목별 결과를 한 줄씩 등록한다. 실패해도 예측·로그 기록엔 영향 없도록 조용히 무시."""
+    try:
+        _SUMMARY_ITEMS.append(kwargs)
+    except Exception as e:
+        print(f"⚠️ 요약 항목 등록 실패(무시): {e}")
+
+
+def _json_default(o):
+    if isinstance(o, (np.floating, np.integer)):
+        return o.item()
+    if isinstance(o, (pd.Timestamp, datetime)):
+        return o.isoformat()
+    return str(o)
+
+
+def finish_report(log_name, horizon_days, report_text):
+    """
+    상세 리포트는 reports/detail_<이름>.txt 로 저장하고(텔레그램은 SEND_DETAIL=1 일 때만 전송),
+    요약용 구조화 결과는 reports/summary_<이름>.json 으로 저장한다.
+    기존엔 6개 메시지(약 14,000자)가 따로 날아와 읽기 어려웠음 → 매일 1개 요약(daily_summary.py)로 대체.
+    """
+    try:
+        os.makedirs(REPORT_DIR, exist_ok=True)
+        with open(os.path.join(REPORT_DIR, f"detail_{log_name}.txt"), 'w', encoding='utf-8') as f:
+            f.write(report_text)
+        payload = {'log': log_name, 'horizon_days': horizon_days,
+                   'generated_at': datetime.now().isoformat(), 'items': list(_SUMMARY_ITEMS)}
+        with open(os.path.join(REPORT_DIR, f"summary_{log_name}.json"), 'w', encoding='utf-8') as f:
+            json.dump(payload, f, ensure_ascii=False, indent=1, default=_json_default)
+    except Exception as e:
+        print(f"⚠️ 리포트 저장 실패(무시): {e}")
+    if os.environ.get('SEND_DETAIL') == '1':
+        send_telegram(report_text)
+
+
 def make_prediction_record(run_date, benchmark, ticker, horizon_days, up_prob, raw_up_prob, price,
-                            near_earnings=False):
+                            near_earnings=False, price_date=None):
     predicted_label = 1 if up_prob >= 50 else 0
-    target_date = (pd.Timestamp(run_date).normalize() + BDay(horizon_days))
-    return {
+    # v25: 목표일은 '예측에 쓴 마지막 종가일 + h영업일'. (이전엔 실행일 기준이라 하루씩 밀려 채점됐음)
+    if price_date is not None and not pd.isna(price_date):
+        pdate = pd.Timestamp(price_date).normalize()
+    else:
+        pdate = _fallback_price_date(run_date)
+    target_date = pdate + BDay(horizon_days)
+    return {'price_date': pdate,
         'run_date': run_date, 'benchmark': benchmark, 'ticker': ticker,
         'horizon_days': horizon_days, 'predicted_label': predicted_label,
         'predicted_up_prob': up_prob, 'raw_up_prob': raw_up_prob,

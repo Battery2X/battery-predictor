@@ -14,6 +14,8 @@ from common import (
     earnings_proximity_warning,
 )
 
+from common import add_summary_item, finish_report, evaluate_signal  # v25: 요약 리포트 수집
+
 LOG_NAME = "stock_scalp"
 HORIZON_DAYS = 1
 THRESHOLD_CAP = 0.03      # 개별 종목(레버리지 아님) 기준 하루 3%
@@ -82,15 +84,23 @@ def run():
             report += f"  * {earn_warn}\n"
         report += "-" * 40 + "\n"
 
+        add_summary_item(ticker=ticker, benchmark=ticker, desc=ticker, direction=1,
+                         up_prob=result['up_prob'], raw_up_prob=result['raw_up_prob'],
+                         base_rate=result['base_rate'], edge=result['edge'],
+                         price=metrics['price'], vol=metrics['vol'], drawdown=metrics['drawdown'],
+                         ret1=metrics['ret1'], ret5=metrics['ret5'], price_date=metrics['price_date'],
+                         near_earnings=is_near_earnings, earnings_warning=earn_warn,
+                         signal=evaluate_signal(settled_df, ticker))
         new_rows.append(make_prediction_record(run_date, ticker, ticker, HORIZON_DAYS,
                                                  result['up_prob'], result['raw_up_prob'], metrics['price'],
-                                                 near_earnings=is_near_earnings))
+                                                 near_earnings=is_near_earnings,
+                                                 price_date=metrics['price_date']))
 
     if new_rows:
         append_predictions(LOG_NAME, new_rows)
 
     print("\n" + report)
-    send_telegram(report)
+    finish_report(LOG_NAME, HORIZON_DAYS, report)  # v25: 상세는 파일 저장, 요약은 daily_summary.py
 
 
 if __name__ == "__main__":
