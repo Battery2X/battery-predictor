@@ -78,7 +78,9 @@ def main():
     start = sys.argv[1] if len(sys.argv) > 1 else '2026-01-01'
     step = int(sys.argv[2]) if len(sys.argv) > 2 else 3
     outdir = sys.argv[3] if len(sys.argv) > 3 else 'reports'
-    per_variant = int(os.environ.get('BT_MAX_SECONDS', '4000')) // len(VARIANTS)
+    sel = [x.strip() for x in os.environ.get('BT_VARIANTS', '').split(',') if x.strip()]
+    todo = {k: v for k, v in VARIANTS.items() if (not sel or any(k.startswith(x) for x in sel))} or VARIANTS
+    per_variant = int(os.environ.get('BT_MAX_SECONDS', '4000')) // len(todo)
     os.makedirs(outdir, exist_ok=True)
     pm = {}
     for b in B.BENCHMARKS:
@@ -94,7 +96,7 @@ def main():
     except Exception:
         extra['SMH'] = None
     allp, L = [], [f"[라벨·보정 수정안 비교 백테스트] {start}~ · {step}거래일 간격 · 평가=실제 h일 수익률>0 · 실전 적중률 아님", ""]
-    for name, (lab, cal) in VARIANTS.items():
+    for name, (lab, cal) in todo.items():
         fn = lambda b, m, h, cap, _l=lab, _c=cal, **k: train_variant(_l, _c, b, m, h, cap, **k)
         p = B.run_backtest(pm, macro, start, step, train_fn=fn, extra_map=extra, max_seconds=per_variant, log=lambda *_: None)
         if p.empty:

@@ -16,6 +16,10 @@ on:
         description: "backtest 전용: 기준일 간격(거래일, 기본 3)"
         required: false
         default: "3"
+      bt_variants:
+        description: "variants 전용: 쉼표로 구분한 변형 접두어(예: V0,V1). 비우면 전부"
+        required: false
+        default: ""
       apply:
         description: "resettle 전용: true 면 로그를 실제로 덮어씀(백업 생성). false 면 dry-run"
         required: false
@@ -86,6 +90,7 @@ jobs:
         if: ${{ inputs.tool == 'variants' }}
         env:
           BT_MAX_SECONDS: "4800"
+          BT_VARIANTS: ${{ inputs.bt_variants }}
         run: |
           mkdir -p reports
           python backtest_variants.py "${{ inputs.bt_start }}" "${{ inputs.bt_step }}" reports

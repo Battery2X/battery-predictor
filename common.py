@@ -531,6 +531,22 @@ FEATURE_COLUMNS = [
 # ============================================================
 # 4) 타겟 생성 — 대칭 3구간(상승/하락/횡보), 횡보는 학습 제외
 # ============================================================
+# v31: 학습 라벨 정의. 'all' = 횡보 포함 전 구간에서 h일 수익률>0 여부(평가·정산 라벨과 동일),
+# 'deadzone' = v30까지의 방식(횡보 제외). 감사(audit_math E1)에서 횡보 제외 라벨이 상승장에서 상승확률/기준선을
+# 최대 +6.7%p 부풀리는 것이 확인돼 통일했다. 되돌리려면 'deadzone' 으로 바꾸면 v30 동작과 동일(회귀 테스트 있음).
+LABEL_MODE = 'all'
+
+
+def apply_label_mode(df, mode=None):
+    """build_target 직후 호출. 'all' 이면 Target 을 (Target_Ret>0) 으로 덮어쓴다(수익률을 모르는 마지막 h행은 NaN 유지)."""
+    mode = mode or LABEL_MODE
+    if mode != 'all' or 'Target_Ret' not in df.columns:
+        return df
+    tr = df['Target_Ret']
+    df['Target'] = np.where(tr.notna(), (tr > 0).astype(float), np.nan)
+    return df
+
+
 def build_target(df, horizon_days, threshold_cap):
     rolling_median_ret = df['Close'].pct_change().abs().rolling(window=60, min_periods=20).median()
     dyn_threshold = np.clip(rolling_median_ret * 0.5 * np.sqrt(horizon_days), 0.003, threshold_cap)
@@ -575,6 +591,7 @@ def _train_benchmark_model_impl(benchmark, macro_df, horizon_days, threshold_cap
     df = df.ffill().dropna()
     df = build_features(df, benchmark_col=REL_COMPARISON[benchmark])
     df = build_target(df, horizon_days, threshold_cap / benchmark_multiplier)
+    df = apply_label_mode(df)                    # v31: 학습 라벨을 평가 라벨(ret>0)과 통일
     df = df.replace([np.inf, -np.inf], np.nan)   # v27: 0원/결측 가격이 만든 inf 피처가 학습을 죽이지 않도록
 
     feature_cols = FEATURE_COLUMNS + (extra_feature_cols or [])
@@ -655,7 +672,7 @@ def _train_benchmark_model_impl(benchmark, macro_df, horizon_days, threshold_cap
     if clamped:
         print(f"ℹ️ [{benchmark}] 보정 확률 {_unclamped*100:.1f}% → {calibrated_up_prob*100:.1f}%로 제한(등온회귀 극단값; 과신 신호일 수 있음)")
 
-    # 기준선(base rate): 횡보 제외 학습 샘플 중 실제 상승 비율.
+    # 기준선(base rate): 학습 샘플 중 실제 상승 비율. (v31 이후 LABEL_MODE='all' 이면 횡보 포함 전체에서의 ret>0 비율)
     # 모델의 진짜 엣지 = 보정확률 - 기준선. 이 값이 0에 가까우면
     # 모델이 "그 시점 특유의 정보"가 아니라 그냥 과거 평균(강세장 편향 등)을
     # 재현하고 있을 가능성이 높다는 뜻.
