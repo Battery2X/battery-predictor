@@ -43,6 +43,7 @@ jobs:
       # ---- 레버리지/인버스 ETF (TQQQ/SQQQ, SOXL/SOXS, SPXL/SPXS) ----
       - name: ⚡ 단타 분석 실행 (predict_scalp.py, 1일 호라이즌)
         continue-on-error: true
+        timeout-minutes: 10   # v29: 시세 서버 무응답 등으로 한 단계가 멈춰도 나머지 단계와 로그 커밋이 진행되게
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -50,6 +51,7 @@ jobs:
         run: python predict_scalp.py
       - name: 📈 스윙 분석 실행 (predict_swing.py, 5일 호라이즌)
         continue-on-error: true
+        timeout-minutes: 10   # v29: 시세 서버 무응답 등으로 한 단계가 멈춰도 나머지 단계와 로그 커밋이 진행되게
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -57,6 +59,7 @@ jobs:
         run: python predict_swing.py
       - name: 🏔️ 포지션 분석 실행 (predict_position.py, 20일 호라이즌)
         continue-on-error: true
+        timeout-minutes: 10   # v29: 시세 서버 무응답 등으로 한 단계가 멈춰도 나머지 단계와 로그 커밋이 진행되게
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -66,6 +69,7 @@ jobs:
       # ---- 개별 종목 (AAPL/NVDA/TSLA) ----
       - name: 🍎 종목-단타 분석 실행 (predict_stock_scalp.py, 1일 호라이즌)
         continue-on-error: true
+        timeout-minutes: 10   # v29: 시세 서버 무응답 등으로 한 단계가 멈춰도 나머지 단계와 로그 커밋이 진행되게
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -73,6 +77,7 @@ jobs:
         run: python predict_stock_scalp.py
       - name: 🍎 종목-스윙 분석 실행 (predict_stock_swing.py, 5일 호라이즌)
         continue-on-error: true
+        timeout-minutes: 10   # v29: 시세 서버 무응답 등으로 한 단계가 멈춰도 나머지 단계와 로그 커밋이 진행되게
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -80,6 +85,7 @@ jobs:
         run: python predict_stock_swing.py
       - name: 🍎 종목-포지션 분석 실행 (predict_stock_position.py, 20일 호라이즌)
         continue-on-error: true
+        timeout-minutes: 10   # v29: 시세 서버 무응답 등으로 한 단계가 멈춰도 나머지 단계와 로그 커밋이 진행되게
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -89,6 +95,7 @@ jobs:
       # ---- 쉬운 요약 리포트 (6개 실행 후, 로그는 읽기만 함 → 검증 시계 영향 없음) ----
       - name: 🧭 쉬운 요약 리포트 (daily_summary.py, 위험판·일정·핫이슈·뉴스)
         continue-on-error: true
+        timeout-minutes: 10   # v29: 시세 서버 무응답 등으로 한 단계가 멈춰도 나머지 단계와 로그 커밋이 진행되게
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

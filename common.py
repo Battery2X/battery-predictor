@@ -252,8 +252,12 @@ def fetch_macro_data(start_date='2022-01-01'):
     macro_data = {}
     for name, t in MACRO_TICKERS.items():
         df_raw = _yf_download_with_retry(t, start_date)
-        if not df_raw.empty:
-            macro_data[name] = df_raw['Close'].squeeze()
+        if df_raw is not None and not df_raw.empty:
+            c = _flat_col(df_raw, 'Close')
+            if c is None:
+                print(f"⚠️ [{t}] 매크로 응답에 Close 열이 없음 — 이 지표는 건너뜀")
+                continue
+            macro_data[name] = c
     macro_df = pd.DataFrame(macro_data).ffill().dropna()
     return macro_df
 
@@ -303,14 +307,37 @@ def clean_price_frame(df):
         return df
 
 
+def _flat_col(df, name):
+    """yfinance 스키마 변화 대응: 단일 열 / MultiIndex 열(('Close','TQQQ') 등) 어느 쪽이든 1차원 Series 로 꺼낸다. 없으면 None."""
+    try:
+        if name in df.columns:
+            col = df[name]
+        elif isinstance(df.columns, pd.MultiIndex) and name in df.columns.get_level_values(0):
+            col = df.xs(name, axis=1, level=0)
+        else:
+            return None
+        if isinstance(col, pd.DataFrame):
+            col = col.iloc[:, 0]
+        return pd.to_numeric(col, errors='coerce')
+    except Exception:
+        return None
+
+
 def fetch_ticker_data(ticker, start_date='2022-01-01'):
     tgt = _yf_download_with_retry(ticker, start_date)
-    if tgt.empty:
+    if tgt is None or tgt.empty:
         return None
+    close = _flat_col(tgt, 'Close')
+    if close is None:
+        close = _flat_col(tgt, 'Adj Close')       # 스키마가 바뀌어 Close 가 없을 때의 폴백(조정종가)
+    if close is None:
+        print(f"⚠️ [{ticker}] 시세 응답에 Close/Adj Close 열이 없음 — 데이터 없음으로 처리(스키마 변경 의심: {list(map(str, tgt.columns))[:6]})")
+        return None
+    high, low = _flat_col(tgt, 'High'), _flat_col(tgt, 'Low')
     out = pd.DataFrame({
-        'High': tgt['High'].squeeze(),
-        'Low': tgt['Low'].squeeze(),
-        'Close': tgt['Close'].squeeze(),
+        'High': high if high is not None else close,
+        'Low': low if low is not None else close,
+        'Close': close,
     })
     out = clean_price_frame(out)
     out = drop_partial_us_bar(out)
@@ -789,6 +816,21 @@ def _fallback_price_date(run_date):
     return pd.Timestamp(run_date).normalize() - BDay(1)
 
 
+STALE_PRICE_DAYS = 6
+SPLIT_RATIOS = (2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 25, 30, 40, 50, 100)
+
+
+def _looks_like_split_ratio(ratio, tol=0.06):
+    """진입가 비율이 분할/역분할 비율(k 또는 1/k)과 거의 같으면 True. 시세가 소급 조정된 것으로 본다(v29)."""
+    try:
+        r = float(ratio)
+    except Exception:
+        return False
+    if not np.isfinite(r) or r <= 0:
+        return False
+    return any(abs(r / k - 1) < tol or abs(r * k - 1) < tol for k in SPLIT_RATIOS)
+
+
 def compute_aligned_outcome(price_df, price_date, horizon_days, logged_entry_price=None, entry_tol=0.015):
     """
     모델이 학습한 목표(종가 t → t+h '거래일' 뒤 종가)와 똑같은 기준으로 실제 결과를 계산한다.
@@ -820,7 +862,10 @@ def compute_aligned_outcome(price_df, price_date, horizon_days, logged_entry_pri
     entry = float(close.iloc[pos])
     logged = pd.to_numeric(logged_entry_price, errors='coerce') if logged_entry_price is not None else np.nan
     if np.isfinite(logged) and logged > 0:
-        if abs(entry / float(logged) - 1) > entry_tol:
+        ratio = entry / float(logged)
+        if abs(ratio - 1) > entry_tol and not _looks_like_split_ratio(ratio):
+            # 날짜 어긋남 의심 → 로그 기록가 사용(구 방식). 단, 비율이 분할/역분할(2:1, 1:10 …)과 같으면
+            # 시세 제공처가 과거를 소급 조정한 것이므로 시리즈 진입가를 그대로 쓴다(v29).
             entry = float(logged)
     actual_price = float(close.iloc[tpos])
     actual_ret = (actual_price - entry) / entry
@@ -932,6 +977,15 @@ def _drop_invalid_records(new_df, name=""):
     reasons[~np.isfinite(price) | (price <= 0)] += '진입가 비정상 '
     reasons[~np.isfinite(hz) | (hz < 1)] += '호라이즌 비정상 '
     reasons[new_df['run_date'].isna()] += 'run_date 없음 '
+    # v29: 정합성 — 시계 오류(먼 미래 실행일)와 룩어헤드(가격일이 실행일보다 미래)는 기록하지 않는다.
+    _naive = lambda x: x.dt.tz_localize(None) if getattr(x.dt, 'tz', None) is not None else x
+    _rd = _naive(pd.to_datetime(new_df['run_date'], errors='coerce'))
+    reasons[_rd > pd.Timestamp.now() + pd.Timedelta(days=3)] += '실행일이 미래(시계 오류 의심) '
+    if 'price_date' in new_df.columns:
+        _pdv = _naive(pd.to_datetime(new_df['price_date'], errors='coerce'))
+        reasons[(_pdv.dt.normalize() > _rd.dt.normalize())] += '가격일이 실행일보다 미래(룩어헤드) '
+        # 시세가 며칠째 갱신되지 않은 채 돌아온 예측(캐시·장애)은 '그날의 라이브 예측'이 아니다. 긴 연휴(최대 5일)보다 오래되면 거부.
+        reasons[((_rd.dt.normalize() - _pdv.dt.normalize()) > pd.Timedelta(days=STALE_PRICE_DAYS))] += '가격일이 너무 오래됨(데이터 정체 의심) '
     tk = new_df['ticker'] if 'ticker' in new_df.columns else pd.Series(np.nan, index=new_df.index)
     reasons[tk.isna() | (tk.astype(str).str.strip() == '')] += 'ticker 없음 '
     bad = reasons != ''

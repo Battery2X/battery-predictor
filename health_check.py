@@ -21,6 +21,7 @@ import pandas as pd
 
 LOG_EXPECTED = {'scalp': 6, 'swing': 6, 'position': 6, 'stock_scalp': 3, 'stock_swing': 3, 'stock_position': 3}
 MAX_LAG_DAYS = 4
+OVERDUE_DAYS = 45
 
 
 def check_health(log_dir="logs", today=None, expected=None, max_lag_days=MAX_LAG_DAYS):
@@ -54,6 +55,11 @@ def check_health(log_dir="logs", today=None, expected=None, max_lag_days=MAX_LAG
                 _dup = int(pd.DataFrame({'d': _rd, 't': df['ticker'].astype(str).str.strip().str.upper(), 'h': df['horizon_days']}).duplicated().sum())
                 if _dup:
                     issues.append(f"{name}: 같은 날·종목·호라이즌 중복 행 {_dup}건 — 표본이 부풀려졌을 수 있음")
+            if 'actual_label' in df.columns and 'target_date' in df.columns:      # v29: 상장폐지·시세 중단 등으로 정산이 무기한 밀리는 행
+                _td = pd.to_datetime(df['target_date'], errors='coerce')
+                _late = int((df['actual_label'].isna() & (_td < today - pd.Timedelta(days=OVERDUE_DAYS))).sum())
+                if _late:
+                    issues.append(f"{name}: 목표일이 {OVERDUE_DAYS}일 넘게 지났는데 정산 안 된 행 {_late}건 — 시세 중단/상장폐지/조회 실패 의심")
             n_last = int(df.loc[pdv.dt.normalize() == last.normalize(), ['ticker', 'horizon_days']].drop_duplicates().shape[0])
             if n_last < n_exp:
                 issues.append(f"{name}: {last.date()} 기록 {n_last}건(기대 {n_exp}건) — 일부 종목/벤치마크 누락")
