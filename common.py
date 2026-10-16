@@ -12,6 +12,7 @@ v23.0 변경사항
 4. train_benchmark_model()을 공통 모듈로 이동 (3개 스크립트 중복 제거)
 """
 import os
+import contextlib
 import re
 import html
 import json
@@ -896,6 +897,28 @@ def settle_predictions(name):
     return df
 
 
+@contextlib.contextmanager
+def _log_lock(name):
+    """같은 기계에서 두 프로세스가 같은 로그를 동시에 '읽고→쓰기' 하다 한쪽 기록이 덮어써지는 것을 막는다(v28).
+    잠금 파일은 logs/ 밖(임시 폴더)에 둬서 git 커밋에 섞이지 않는다. 잠금을 못 얻거나 fcntl이 없으면 조용히 건너뛴다."""
+    fh = None
+    try:
+        import fcntl, hashlib, tempfile
+        key = hashlib.md5(os.path.abspath(_log_path(name)).encode()).hexdigest()[:12]
+        fh = open(os.path.join(tempfile.gettempdir(), f"battery_{key}.lock"), 'w')
+        fcntl.flock(fh, fcntl.LOCK_EX)
+    except Exception:
+        fh = None
+    try:
+        yield
+    finally:
+        if fh is not None:
+            try:
+                fh.close()
+            except Exception:
+                pass
+
+
 def _drop_invalid_records(new_df, name=""):
     """
     기록 전 검증(v27): 상승확률이 유한하고 0~100이며, 진입가가 유한한 양수이고, 호라이즌이 양의 정수이며,
@@ -936,6 +959,16 @@ def append_predictions(name, rows):
        약 30%). 이번에 안전장치 1을 복원하고 안전장치 2를 추가로 더했다.
     -> 로직/피처/임계값과는 무관한 "로깅 안전장치"이며 예측 모델 자체는 전혀 바뀌지 않는다.
     """
+    with _log_lock(name):
+        _append_predictions_impl(name, rows)
+
+
+def _tk(series):
+    """티커 비교용 정규화(공백 제거·대문자). 로그 원본 값은 바꾸지 않고 '키 비교'에만 쓴다(v28)."""
+    return series.astype(str).str.strip().str.upper()
+
+
+def _append_predictions_impl(name, rows):
     df = load_log(name)
     new_df = pd.DataFrame(rows)
     if new_df.empty:
@@ -945,14 +978,28 @@ def append_predictions(name, rows):
     new_df = _drop_invalid_records(new_df, name)
     if new_df.empty:
         return
+    new_df['ticker'] = _tk(new_df['ticker'])
 
     if 'price_date' not in new_df.columns:
         new_df['price_date'] = pd.NaT
     new_df['price_date'] = pd.to_datetime(new_df['price_date'], errors='coerce')
 
+    # v28: 한 번에 들어온 배치 안의 중복도 같은 규칙으로 제거(같은 실행일 또는 같은 종가 기준 → 가장 이른 run_date 1건)
+    new_df = new_df.sort_values('run_date', kind='stable')
+    eff_pd = new_df['price_date'].copy()
+    _m = eff_pd.isna()
+    if _m.any():
+        eff_pd[_m] = new_df.loc[_m, 'run_date'].apply(_fallback_price_date)
+    _dup = (new_df.assign(_d=new_df['run_date'].dt.date).duplicated(['_d', 'ticker', 'horizon_days'])
+            | pd.DataFrame({'_p': eff_pd.dt.date, 't': new_df['ticker'], 'h': new_df['horizon_days']}).duplicated())
+    if _dup.any():
+        print(f"ℹ️ [{name}] 한 배치 안의 중복 {int(_dup.sum())}건 제거")
+        new_df = new_df[~_dup.values]
+
     if not df.empty:
+        df_tk = _tk(df['ticker'])
         existing_keys = set(
-            zip(df['run_date'].dt.date, df['ticker'], df['horizon_days'])
+            zip(df['run_date'].dt.date, df_tk, df['horizon_days'])
         )
         # v25: '같은 종가 기준' 예측도 중복으로 본다(토요일 실행과 월요일 실행은 둘 다 금요일 종가 기준 =
         # 같은 정보). 구 로그 행은 price_date가 없어 폴백(직전 영업일)으로 계산.
@@ -960,7 +1007,7 @@ def append_predictions(name, rows):
         miss = df_pd.isna()
         if miss.any():
             df_pd[miss] = df.loc[miss, 'run_date'].apply(_fallback_price_date)
-        existing_pd_keys = set(zip(df_pd.dt.date, df['ticker'], df['horizon_days']))
+        existing_pd_keys = set(zip(df_pd.dt.date, df_tk, df['horizon_days']))
         dup_mask = new_df.apply(
             lambda r: ((r['run_date'].date(), r['ticker'], r['horizon_days']) in existing_keys) or
                       (pd.notna(r['price_date']) and

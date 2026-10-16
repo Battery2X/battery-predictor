@@ -49,6 +49,11 @@ def check_health(log_dir="logs", today=None, expected=None, max_lag_days=MAX_LAG
             if lag > max_lag_days:
                 issues.append(f"{name}: 최근 기록이 {lag}일 전({last.date()}) — 실행이 며칠째 쌓이지 않음")
                 continue
+            _rd = pd.to_datetime(df['run_date'], errors='coerce').dt.date if 'run_date' in df.columns else None
+            if _rd is not None and 'horizon_days' in df.columns:       # v28: 같은 날·종목·호라이즌 중복 행(멱등성 위반) 감시
+                _dup = int(pd.DataFrame({'d': _rd, 't': df['ticker'].astype(str).str.strip().str.upper(), 'h': df['horizon_days']}).duplicated().sum())
+                if _dup:
+                    issues.append(f"{name}: 같은 날·종목·호라이즌 중복 행 {_dup}건 — 표본이 부풀려졌을 수 있음")
             n_last = int(df.loc[pdv.dt.normalize() == last.normalize(), ['ticker', 'horizon_days']].drop_duplicates().shape[0])
             if n_last < n_exp:
                 issues.append(f"{name}: {last.date()} 기록 {n_last}건(기대 {n_exp}건) — 일부 종목/벤치마크 누락")

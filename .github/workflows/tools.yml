@@ -47,12 +47,23 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add logs/
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: re-settle logs with model-aligned scoring (v25) [skip ci]"
-            git pull --rebase origin "${GITHUB_REF_NAME}" || git rebase --abort
-            git push
-          fi
+          python push_logs.py "${GITHUB_REF_NAME}" "chore: re-settle logs with model-aligned scoring (v25) [skip ci]" logs
       - name: BTC 선행성 검정
         if: ${{ inputs.tool == 'btc' }}
-        run: python btc_leadlag_test.py
+        run: |
+          mkdir -p reports
+          python btc_leadlag_test.py | tee reports/btc_leadlag.txt
+      - name: BTC 검정 결과 저장 (reports/btc_leadlag.txt 커밋 — 예측 로그는 건드리지 않음)
+        if: ${{ inputs.tool == 'btc' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          python push_logs.py "${GITHUB_REF_NAME}" "chore: BTC lead-lag result [skip ci]" reports/btc_leadlag.txt
+      - name: 🛟 push 실패 시 로그 보존 (artifact)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rescue-logs
+          path: rescue_logs/
+          if-no-files-found: ignore
+          retention-days: 30

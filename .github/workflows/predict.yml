@@ -99,16 +99,18 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add logs/ reports/ 2>/dev/null || true
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: update prediction logs [skip ci]"
-            # concurrency 설정으로 겹치는 실행은 막았지만, 혹시 모를 충돌에
-            # 대비해 push 전에 원격 최신본을 먼저 받아 리베이스한다.
-            git pull --rebase origin "${GITHUB_REF_NAME}" || git rebase --abort
-            git push
-          else
-            echo "변경된 로그 없음 — 커밋 스킵"
-          fi
+          # v28: push 가 거절되면(원격이 먼저 앞서간 경우 등) CSV 를 행 단위로 합쳐 재시도한다.
+          # 끝내 실패하면 rescue_logs/ 에 보존하고 실패 처리 → 아래 artifact 단계가 저장.
+          python push_logs.py "${GITHUB_REF_NAME}" "chore: update prediction logs [skip ci]" logs reports
+
+      - name: 🛟 push 실패 시 로그 보존 (artifact)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rescue-logs
+          path: rescue_logs/
+          if-no-files-found: ignore
+          retention-days: 30
 
       # ---- 건강 점검: 분석 단계가 전부 continue-on-error 라서 '조용한 실패'를 여기서 잡는다 (v27) ----
       - name: 🩺 실행 건강 점검 (health_check.py — 로그 누락·정체 시 텔레그램 알림 + 실패 처리)
