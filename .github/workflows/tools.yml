@@ -4,10 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       tool:
-        description: "resettle = 과거 정산 재채점 / btc = 비트코인 선행성 검정"
+        description: "resettle = 과거 정산 재채점 / btc = 비트코인 선행성 검정 / backtest = 워크포워드 백테스트(읽기 전용)"
         required: true
         type: choice
-        options: [resettle, btc]
+        options: [resettle, btc, backtest]
+      bt_start:
+        description: "backtest 전용: 시작일(기본 2026-01-01)"
+        required: false
+        default: "2026-01-01"
+      bt_step:
+        description: "backtest 전용: 기준일 간격(거래일, 기본 3)"
+        required: false
+        default: "3"
       apply:
         description: "resettle 전용: true 면 로그를 실제로 덮어씀(백업 생성). false 면 dry-run"
         required: false
@@ -24,7 +32,7 @@ permissions:
 jobs:
   run-tool:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -67,3 +75,16 @@ jobs:
           path: rescue_logs/
           if-no-files-found: ignore
           retention-days: 30
+      - name: 워크포워드 백테스트 (로그는 건드리지 않음)
+        if: ${{ inputs.tool == 'backtest' }}
+        env:
+          BT_MAX_SECONDS: "4200"
+        run: |
+          mkdir -p reports
+          python backtest_2026.py "${{ inputs.bt_start }}" "${{ inputs.bt_step }}" reports
+      - name: 백테스트 결과 저장 (reports/ 에만 커밋)
+        if: ${{ inputs.tool == 'backtest' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          python push_logs.py "${GITHUB_REF_NAME}" "chore: backtest report [skip ci]" reports/backtest_2026.txt reports/backtest_2026.json reports/backtest_2026_preds.tsv
