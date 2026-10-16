@@ -266,8 +266,9 @@ def _target_phrase(price_date, today_kst):
 STATUS_ICON = {'pass': '✅', 'fail': '❌', 'insufficient': '⏳', None: '·'}
 
 
-def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_kst):
-    """텔레그램에 보낼 섹션 문자열 리스트(각각 독립 블록)를 만든다."""
+def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_kst, risk=None):
+    """텔레그램에 보낼 섹션 문자열 리스트(각각 독립 블록)를 만든다.
+    risk: {티커: risk_model.risk_snapshot 결과} (없거나 일부만 있어도 됨)"""
     sections = []
     series = _series_items(summaries)
 
@@ -321,6 +322,13 @@ def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_k
                 sub.append(txt)
             if sub:
                 lines.append("  └ " + " · ".join(sub))
+            rk = (risk or {}).get(s['ticker'])
+            if rk and rk.get('move_1d') is not None and rk.get('move_5d') is not None:
+                line = (f"  └ 예상 흔들림(1σ): 하루 ±{rk['move_1d']*100:.1f}% · 5일 ±{rk['move_5d']*100:.1f}%"
+                        " (3번 중 2번은 이 안, 방향 예측 아님)")
+                if rk.get('regime'):
+                    line += f"\n  └ 지금 상태: {_e(rk['regime'])}"
+                lines.append(line)
         if btc:
             lines.append(f"참고 BTC ${btc['price']:,.0f} · 1일 {_pct(btc['ret1'],1,True)} · 7일 {_pct(btc['ret7'],1,True)}"
                          f" · 30일고점대비 {_pct(btc['from_high30'],1,True)} (주식 선행 여부는 아직 검증 전)")
