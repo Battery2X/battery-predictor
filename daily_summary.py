@@ -57,7 +57,7 @@ def collect_risk(tickers, now_kst, log_dir=None, report_dir=None, fetcher=None):
             if score.empty:
                 f.write("변동성 예측 성적표: 아직 정산된 행이 없습니다(예측 후 호라이즌 일수가 지나야 채점됩니다).\n")
             else:
-                f.write("변동성 예측 성적표 (QLIKE 낮을수록 좋음 · bias 1.0이 이상적 · n_eff<80이면 아직 못 믿음)\n")
+                f.write("변동성 예측 성적표 (QLIKE 낮을수록 좋음 · bias_var(분산단위 실현²합/예측²합) 1.0이 이상적·>1이면 과소예측 · bias는 구 지표(해석 주의) · vol_har/vol_gjr/vol_ewmaf는 그림자 후보 · n_eff<80이면 아직 못 믿음)\n")
                 f.write(score.to_string(index=False, float_format=lambda x: f"{x:.3f}") + "\n")
     except Exception as e:
         print(f"⚠️ 위험 모델 단계 실패(무시, 나머지 리포트는 계속): {e}")
