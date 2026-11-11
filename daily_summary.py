@@ -52,6 +52,16 @@ def collect_risk(tickers, now_kst, log_dir=None, report_dir=None, fetcher=None):
                 print(f"⚠️ [{t}] 위험 스냅샷 실패(무시): {e}")
         rm.save_vol_log(log, log_dir)
         score = rm.score_vol_log(log)
+        try:      # v33: 리포트의 '예상 흔들림' 옆에 실전 과소/과대예측 정도를 같이 보여주기 위한 요약(표시 전용)
+            vb = {}
+            for _, row in score[score['candidate'] == 'vol_ewma'].iterrows():
+                bv = float(row['bias_var'])
+                if bv > 0 and bv == bv:
+                    vb[int(row['horizon'])] = {'ratio': bv ** 0.5, 'n_eff': float(row['n_eff']), 'n': int(row['n'])}
+            if vb and risk:      # 종목 스냅샷이 하나도 없으면 기존처럼 {} 유지
+                risk['_vol_bias'] = vb
+        except Exception:
+            pass
         os.makedirs(report_dir, exist_ok=True)
         with open(os.path.join(report_dir, "vol_scorecard.txt"), "w", encoding="utf-8") as f:
             if score.empty:
@@ -74,6 +84,14 @@ def run():
 
     from easy_report import LEVERAGED_LONGS
     risk = collect_risk(LEVERAGED_LONGS, now_kst)
+
+    try:
+        from easy_report import calendar_staleness
+        cw = calendar_staleness(MARKET_EVENTS, STOCK_EARNINGS_DATES, today=now_kst.date())
+        if cw:
+            risk['_calendar_warn'] = cw
+    except Exception as e:
+        print(f"⚠️ 달력 점검 실패(무시): {e}")
 
     sections = build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_kst, risk=risk)
     messages = chunk_sections(sections)

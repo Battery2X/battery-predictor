@@ -95,6 +95,47 @@ def upcoming_events(market_events, earnings_dates, today=None, window=14, max_it
     return [{'date': d, 'days_left': int((d - today).days), 'desc': t} for d, t in rows[:max_items]]
 
 
+def calendar_staleness(market_events, earnings_dates, hot_path=HOT_ISSUES_PATH, today=None):
+    """수동으로 관리하는 달력/메모가 비었는지 점검해 안내 문구 리스트를 돌려준다(없으면 []). 표시 전용, 예외 없음."""
+    out = []
+    try:
+        today = pd.Timestamp(today or datetime.now(KST).date()).normalize()
+        past = []
+        for tk, ds in (earnings_dates or {}).items():
+            try:
+                if pd.Timestamp(ds).normalize() < today:
+                    past.append(tk)
+            except Exception:
+                past.append(tk)
+        if past:
+            out.append(f"실적일이 지난 종목: {', '.join(sorted(past))} — 다음 실적일 미입력(실적 임박 경고·near_earnings 기록이 꺼져 있음)")
+        fut = 0
+        for ds in (market_events or {}):
+            try:
+                fut += int(pd.Timestamp(ds).normalize() >= today)
+            except Exception:
+                pass
+        if fut == 0:
+            out.append("경제 일정표(MARKET_EVENTS)에 앞으로의 일정이 없음")
+        try:
+            with open(hot_path, encoding='utf-8') as f:
+                data = json.load(f)
+            raw = data.get('issues', []) if isinstance(data, dict) else []
+            alive = 0
+            for it in raw if isinstance(raw, list) else []:
+                try:
+                    alive += int(pd.Timestamp(it['until']).normalize() >= today)
+                except Exception:
+                    pass
+            if raw and alive == 0:
+                out.append(f"핫이슈 메모가 전부 만료됨(마지막 갱신 {data.get('updated', '?')})")
+        except Exception:
+            pass
+    except Exception:
+        return []
+    return out
+
+
 # ------------------------------------------------------------------
 # 3) 외부 참고 정보 (실패해도 조용히 생략)
 # ------------------------------------------------------------------
@@ -225,7 +266,7 @@ def lesson_of_the_day(today, board_items):
             if r is not None:
                 rec = (it.get('ticker'), it.get('drawdown'), r)
     if rec:
-        lessons.append(f"본전 계산: {rec[0]}은 고점 대비 {rec[1]*100:.0f}% → 본전까지 +{rec[2]*100:.0f}% 필요합니다. "
+        lessons.append(f"회복 계산: {rec[0]}은 60일 고점 대비 {rec[1]*100:.0f}% → 그 고점까지 +{rec[2]*100:.0f}% 필요합니다. "
                        f"낙폭이 커질수록 회복에 필요한 상승률은 더 빨리 커집니다(-50%면 +100%).")
     else:
         lessons.append("본전 계산: -35% 하락하면 본전까지 +54%, -50%면 +100%가 필요합니다. "
@@ -310,12 +351,12 @@ def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_k
         for s in board:
             tag = " (보유)" if s['ticker'] in HELD_TICKERS else ""
             lines.append(f"<b>{s['ticker']}{tag}</b> ${s['price']:.2f} · 5일 {_pct(s.get('ret5'), 0, True)}"
-                         f" · 고점대비 {_pct(s.get('drawdown'), 1, True)}")
+                         f" · 60일 고점대비 {_pct(s.get('drawdown'), 1, True)}")
             r = recovery_needed(s.get('drawdown'))
             d = decay_estimate_monthly(s.get('vol'))
             sub = []
             if r is not None and r > 0.05:
-                sub.append(f"본전까지 +{r*100:.0f}% 필요")
+                sub.append(f"60일 고점 회복까지 +{r*100:.0f}% 필요")   # v33: '본전'은 내 매수가로 오해됨(실제 기준은 최근 60거래일 종가 고점)
             if s.get('vol') is not None and not pd.isna(s.get('vol')):
                 txt = f"변동성 {s['vol']*100:.0f}%"
                 if d is not None:
@@ -336,6 +377,17 @@ def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_k
                              " — 분할 미조정 가능성이라 위 흔들림 계산에서는 뺐습니다"
                              + (f" (포함하면 5일 ±{alt*100:.1f}%, 실제 폭락·폭등이었다면 이쪽이 맞음)" if _fin(alt) else ""))
                 lines.append(line)
+        vb = (risk or {}).get('_vol_bias')
+        try:
+            if vb and vb.get(1) and vb[1]['ratio'] >= 1.25:
+                txt = f"  ※ 최근 실전에서 실제 흔들림은 예상의 약 {vb[1]['ratio']:.1f}배(하루)"
+                if vb.get(5):
+                    txt += f"·{vb[5]['ratio']:.1f}배(5일)"
+                txt += f"였습니다 → 위 ± 범위가 좁게 나왔을 수 있음 (독립 표본 하루 {vb[1]['n_eff']:.0f}건"
+                txt += (f"·5일 {vb[5]['n_eff']:.0f}건" if vb.get(5) else "") + ", 아직 못 믿는 수치)"
+                lines.append(txt)
+        except Exception:
+            pass
         if btc:
             lines.append(f"참고 BTC ${btc['price']:,.0f} · 1일 {_pct(btc['ret1'],1,True)} · 7일 {_pct(btc['ret7'],1,True)}"
                          f" · 30일고점대비 {_pct(btc['from_high30'],1,True)} (주식 선행 여부는 아직 검증 전)")
@@ -360,6 +412,11 @@ def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_k
             if it['detail']:
                 lines.append(f"  {_e(it['detail'])}")
         sections.append("\n".join(lines))
+
+    # ---- 달력·메모 만료 경고 (v33: 수동 관리 항목이 조용히 비는 것을 알림) ----
+    cal = (risk or {}).get('_calendar_warn') if isinstance(risk, dict) else None
+    if cal:
+        sections.append("🗓️ <b>갱신 필요</b>\n" + "\n".join(f"• {_e(c)}" for c in cal))
 
     # ---- 5. 헤드라인 ----
     if headlines:

@@ -347,7 +347,7 @@ def test_report_build():
     # 내용 점검
     assert '오늘 밤 미국장' in text and '10/16(금)' in text
     assert '검증 통과 0/18' in text
-    assert '본전까지 +53% 필요' in text or '본전까지 +54% 필요' in text
+    assert '60일 고점 회복까지 +53% 필요' in text or '60일 고점 회복까지 +54% 필요' in text
     assert 'SOXL (보유)' in text and '고점대비 -34.7%' in text
     assert 'D-5 10/21(수) TSLA 실적' in text
     assert '반도체 구성종목 상승비율 0%' in text

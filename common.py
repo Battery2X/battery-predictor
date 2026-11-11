@@ -60,12 +60,12 @@ STOCK_TICKERS = ['AAPL', 'NVDA', 'TSLA']
 # 이전 값(TSLA 10/28, NVDA 8/26)은 오래되었거나 틀렸음 → 실적 경고가 엉뚱한 날 떴음.
 STOCK_EARNINGS_DATES = {
     'AAPL': '2026-10-29',
-    'NVDA': '2026-11-18',
+    'NVDA': '2026-11-17',   # v33: 회사 IR 확정(10/28 공지, 11/17 화 마감 후). 이전 값 11/18은 추정치였음
     'TSLA': '2026-10-21',
 }
 
 
-def earnings_proximity_warning(ticker, window_days=5):
+def earnings_proximity_warning(ticker, window_days=5, ref_date=None):
     """
     종목의 다음 실적 발표가 임박했으면 경고 문자열을 반환한다.
     가격 패턴만 학습한 정량 모델은 실적 발표 전후 신뢰도가 크게 떨어지므로,
@@ -77,7 +77,15 @@ def earnings_proximity_warning(ticker, window_days=5):
     if not date_str:
         return None
     earnings_date = pd.Timestamp(date_str)
-    today = pd.Timestamp.now().normalize()
+    # v33: 기준일은 '예측에 쓴 마지막 종가일'(ref_date). 이전엔 실행 시각(UTC 달력일)을 써서, 실적이 미국 마감 후
+    # 발표되는 날의 종가 기준 예측(= 다음날 실적 반응을 맞히는 예측)이 D-(-1)로 계산돼 경고·near_earnings 에서 빠졌다
+    # (실제 로그: TSLA 10/21, AAPL 10/29 종가 기준 행이 near_earnings=0). ref_date 가 없으면 기존 동작 그대로.
+    try:
+        today = pd.Timestamp(ref_date).normalize() if ref_date is not None and not pd.isna(ref_date) else pd.Timestamp.now().normalize()
+        if getattr(today, 'tzinfo', None) is not None:
+            today = today.tz_localize(None)
+    except Exception:
+        today = pd.Timestamp.now().normalize()
     days_left = (earnings_date - today).days
     if 0 <= days_left <= window_days:
         return (f"🚨 실적 발표 D-{days_left} ({date_str}) — 이 구간은 정량 모델(가격 패턴)의 "
@@ -152,6 +160,13 @@ MARKET_EVENTS = {
                    "consensus": "일정 보도 기준(확인 필요)"},
     "2026-11-10": {"desc": "미국 10월 CPI",
                    "consensus": "일정 보도 기준(확인 필요)"},
+    # --- 2026-11-11 추가 (출처: BLS 발표 일정표, 연준 FOMC 캘린더) ---
+    "2026-12-04": {"desc": "미국 11월 고용지표",
+                   "consensus": "BLS 일정표 기준"},
+    "2026-12-09": {"desc": "FOMC 금리 결정 (12/8~9 회의, 점도표 포함 · 한국시간 12/10 새벽 발표)",
+                   "consensus": "연준 캘린더 기준"},
+    "2026-12-10": {"desc": "미국 11월 CPI",
+                   "consensus": "BLS 일정표 기준"},
 }
 
 

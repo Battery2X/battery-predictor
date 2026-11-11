@@ -59,7 +59,7 @@ def run():
             acc_str = f"최근 {acc['n']}회 적중률 {acc['accuracy']:.0f}% (95% CI {acc['ci_low']:.0f}~{acc['ci_high']:.0f}%) — {sig}"
         else:
             acc_str = "적중률 데이터 축적 중"
-        earn_warn = earnings_proximity_warning(ticker, window_days=7)
+        earn_warn = earnings_proximity_warning(ticker, window_days=7, ref_date=metrics.get('price_date'))
         is_near_earnings = earn_warn is not None
 
         report += f"📌 {ticker}\n"
