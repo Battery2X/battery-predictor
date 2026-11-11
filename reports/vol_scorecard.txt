@@ -1,8 +1,8 @@
-변동성 예측 성적표 (QLIKE 낮을수록 좋음 · bias 1.0이 이상적 · n_eff<80이면 아직 못 믿음)
- horizon candidate  n  n_eff  qlike  bias
-       1  vol_ewma 54 18.000  2.647 1.293
-       1  vol_rv20 54 18.000  2.634 1.327
-       1  vol_rv60 54 18.000  3.530 1.479
-       5  vol_ewma 42  2.800  1.709 1.802
-       5  vol_rv20 42  2.800  1.848 1.881
-       5  vol_rv60 42  2.800  2.708 2.004
+변동성 예측 성적표 (QLIKE 낮을수록 좋음 · bias_var(분산단위 실현²합/예측²합) 1.0이 이상적·>1이면 과소예측 · bias는 구 지표(해석 주의) · vol_har/vol_gjr/vol_ewmaf는 그림자 후보 · n_eff<80이면 아직 못 믿음)
+ horizon candidate  n  n_eff  qlike  bias_var  bias
+       1  vol_ewma 54 18.000  2.647     2.623 1.293
+       1  vol_rv20 54 18.000  2.634     2.739 1.327
+       1  vol_rv60 54 18.000  3.530     3.965 1.479
+       5  vol_ewma 42  2.800  1.709     3.783 1.802
+       5  vol_rv20 42  2.800  1.848     4.159 1.881
+       5  vol_rv60 42  2.800  2.708     4.682 2.004
