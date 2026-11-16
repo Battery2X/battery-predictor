@@ -149,6 +149,36 @@ def shadow_scores(d):
     return out
 
 
+PAIRS = (('TQQQ', 'SQQQ'), ('SOXL', 'SOXS'), ('SPXL', 'SPXS'))
+
+
+def pair_outcomes(df):
+    """
+    롱/인버스 쌍의 '결과' 대칭 점검(v36). 예측은 항상 합이 100%지만, 3배 ETF 는 매일 재조정되므로 며칠을 묶으면
+    롱과 인버스가 둘 다 하락(변동성 잠식)할 수 있다 → 5일·20일에서는 '롱 하락 = 인버스 상승'이 정확히 성립하지 않는다.
+    반환 {'pairs': 정산된 쌍 수, 'both_down': n, 'both_up': n} 또는 None.
+    """
+    try:
+        need = ['ticker', 'price_date', 'actual_return']
+        if df is None or any(c not in df.columns for c in need):
+            return None
+        d = df[need].copy()
+        d['actual_return'] = pd.to_numeric(d['actual_return'], errors='coerce')
+        d['day'] = pd.to_datetime(d['price_date'], errors='coerce').dt.normalize()
+        d = d.dropna().drop_duplicates(['day', 'ticker'], keep='first')
+        tot = dn = up = 0
+        for lo, sh in PAIRS:
+            a = d[d['ticker'] == lo].set_index('day')['actual_return']
+            b = d[d['ticker'] == sh].set_index('day')['actual_return']
+            j = pd.concat([a, b], axis=1, keys=['l', 's']).dropna()
+            tot += len(j)
+            dn += int(((j['l'] < 0) & (j['s'] < 0)).sum())
+            up += int(((j['l'] > 0) & (j['s'] > 0)).sum())
+        return {'pairs': tot, 'both_down': dn, 'both_up': up} if tot else None
+    except Exception:
+        return None
+
+
 def reliability(d):
     """확률 구간별 [구간, 행 수, 평균 예측확률%, 실제 상승%]."""
     rows = []
@@ -229,10 +259,17 @@ def run(log_dir="logs", out_dir=None, clock_start=CLOCK_START):
     for name in LOGS:
         path = os.path.join(log_dir, f"predictions_{name}.csv")
         try:
-            d = _prep(pd.read_csv(path), name)
+            raw_ = pd.read_csv(path)
+            d = _prep(raw_, name)
         except Exception as e:
             lines.append(f"\n[{name}] 읽기 실패(건너뜀): {e}")
             continue
+        if not name.startswith('stock'):
+            po = pair_outcomes(raw_)
+            if po:
+                out[f"{name}|pair_outcomes"] = po
+                detail.append(f"\n[{name}] 롱·인버스 결과 대칭: 정산된 쌍 {po['pairs']} 중 둘 다 하락 {po['both_down']} ({po['both_down'] / po['pairs'] * 100:.1f}%) · "
+                              f"둘 다 상승 {po['both_up']} — 예측 합은 100%지만 여러 날을 묶으면 변동성 잠식으로 둘 다 내릴 수 있음")
         try:
             ds_ = add_shadows(d, edge, name)
             if len(ds_):

@@ -504,7 +504,7 @@ def record_env(report_dir="reports", versions=None, today=None):
 
 # ------------------------------------------------------------------ 4) 한 번에 모으기 (daily_summary 가 호출)
 def collect(summaries, log_dir="logs", earnings_manual=None, today=None, fg_getter=None, av_getter=None, sleeper=time.sleep, report_dir=None,
-            quote_tickers=("TQQQ", "SOXL", "SPXL", "SQQQ", "SOXS", "SPXS", "AAPL", "NVDA", "TSLA"),
+            quote_tickers=("TQQQ", "SOXL", "SPXL", "SQQQ", "SOXS", "SPXS"),   # v36: 추적 대상 6개 ETF 만(호출 수를 구성종목·실적 캘린더에 양보)
             pcr_symbols=("SPY", "QQQ", "SMH", "SOXL", "NVDA"), earnings_tickers=("AAPL", "NVDA", "TSLA")):
     """요약 리포트용 dict 를 돌려준다. 어떤 부분이 실패해도 나머지는 채운다. 예외를 밖으로 내지 않는다."""
     ctx = {"fg": None, "fg_stats": {}, "price_warn": [], "price_checked": 0, "earnings_notes": [], "pcr": {}, "av_used": False}

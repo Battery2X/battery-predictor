@@ -104,6 +104,14 @@ def run():
     except Exception as e:
         print(f"⚠️ 시장 맥락 수집 실패(무시): {e}")
 
+    try:      # v36: ETF 속 들여다보기(구성종목 기여도 · 실적 노출 · 재무). 모델 입력 아님, 실패해도 무시
+        import common as _cm
+        import etf_drivers as _ed
+        if isinstance(risk, dict):
+            risk['_drivers'] = _ed.collect(_cm.LOG_DIR, _cm.REPORT_DIR, today=now_kst.date())
+    except Exception as e:
+        print(f"⚠️ ETF 드라이버 수집 실패(무시): {e}")
+
     try:      # v34: 방향 성적표(항상상승 기준선·Brier·독립 구간 수)를 reports/ 에 저장. 로그는 읽기만 함(실패해도 무시)
         import common as _cm
         import direction_scorecard as _ds

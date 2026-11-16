@@ -1,4 +1,9 @@
 {
+ "scalp|pair_outcomes": {
+  "pairs": 234,
+  "both_down": 4,
+  "both_up": 1
+ },
  "scalp|shadow|표본 내 참고(등록 전 포함 전체)": {
   "half": {
    "n": 234,
@@ -97,6 +102,11 @@
   "nonoverlap_min": 49.122807017543856,
   "nonoverlap_max": 49.122807017543856,
   "verdict": "상수 예측을 못 넘음"
+ },
+ "swing|pair_outcomes": {
+  "pairs": 222,
+  "both_down": 9,
+  "both_up": 0
  },
  "swing|shadow|표본 내 참고(등록 전 포함 전체)": {
   "half": {
@@ -203,6 +213,11 @@
   "nonoverlap_min": 0.0,
   "nonoverlap_max": 66.66666666666666,
   "verdict": "판정 불가(독립 3구간 < 15)"
+ },
+ "position|pair_outcomes": {
+  "pairs": 177,
+  "both_down": 8,
+  "both_up": 0
  },
  "position|shadow|표본 내 참고(등록 전 포함 전체)": {
   "half": {

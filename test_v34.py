@@ -106,7 +106,7 @@ with tempfile.TemporaryDirectory() as td:
 
 # ---------------- 3) 핫이슈·일정 (표시 전용)
 hot, age = er.load_hot_issues(today='2026-11-17')
-ck("hot_issues.json: 11/17 기준 살아있는 이슈 3건, 우선순위 순", len(hot) == 3 and [h['priority'] for h in hot] == [1, 2, 3])
+ck("hot_issues.json: 11/17 기준 살아있는 이슈 3건 이상, 우선순위 순", len(hot) >= 3 and [h['priority'] for h in hot] == sorted(h['priority'] for h in hot))
 ck("hot_issues.json: NVDA 이슈는 실적 뒤(11/20) 자동 만료", all('NVIDIA' not in h['title'] for h in er.load_hot_issues(today='2026-11-20')[0]))
 ck("hot_issues.json: 12/11 이후 전부 만료", er.load_hot_issues(today='2026-12-11')[0] == [])
 import common

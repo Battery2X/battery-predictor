@@ -404,6 +404,17 @@ def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_k
     except Exception:
         pass
 
+    # ---- ETF 속 들여다보기 (v36: 구성종목 기여도 · 실적 노출 · 재무. 모델 입력이 아닌 표시) ----
+    try:
+        _drv = (risk or {}).get('_drivers') if isinstance(risk, dict) else None
+        if _drv:
+            import etf_drivers as _ed
+            _dl = _ed.driver_lines(_drv)
+            if _dl:
+                sections.append("🧩 <b>3. ETF 속 들여다보기</b> (무엇이 지수를 움직였나 · 모델 입력 아님)\n" + "\n".join(_e(x) for x in _dl))
+    except Exception:
+        pass
+
     # ---- 3. 일정 ----
     if events:
         lines = ["📅 <b>3. 앞으로 14일 일정</b>"]
@@ -441,7 +452,10 @@ def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_k
     if by_bench:
         lines = ["🧭 <b>6. 방향 신호 (참고용 · 검증 전)</b>",
                  "상승확률 1일 / 5일 / 20일 (괄호: 평소 대비 차이, ±3%p 안이면 '평소와 같음')"]
-        for b in ['QQQ', 'SMH', 'SPY', 'AAPL', 'NVDA', 'TSLA']:
+        # v36: 추적 대상이 6개 ETF 이므로 요약에는 지수 3개만 표시한다. 개별주(AAPL·NVDA·TSLA) 예측은 계속 실행·기록되며
+        # (검증 로그는 끊기면 되살릴 수 없음) SHOW_STOCK_SIGNALS=1 이면 다시 보인다. 개별주는 'ETF 속 들여다보기'에서 구성종목으로 다룬다.
+        _show = ['QQQ', 'SMH', 'SPY'] + (['AAPL', 'NVDA', 'TSLA'] if os.environ.get('SHOW_STOCK_SIGNALS') == '1' else [])
+        for b in _show:
             hs = by_bench.get(b)
             if not hs:
                 continue
