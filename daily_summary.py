@@ -93,6 +93,13 @@ def run():
     except Exception as e:
         print(f"⚠️ 달력 점검 실패(무시): {e}")
 
+    try:      # v34: 방향 성적표(항상상승 기준선·Brier·독립 구간 수)를 reports/ 에 저장. 로그는 읽기만 함(실패해도 무시)
+        import common as _cm
+        import direction_scorecard as _ds
+        _ds.run(_cm.LOG_DIR, _cm.REPORT_DIR)
+    except Exception as e:
+        print(f"⚠️ 방향 성적표 저장 실패(무시): {e}")
+
     sections = build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_kst, risk=risk)
     messages = chunk_sections(sections)
     for m in messages:
