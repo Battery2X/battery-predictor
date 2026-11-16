@@ -531,6 +531,11 @@ def collect(summaries, log_dir="logs", earnings_manual=None, today=None, fg_gett
         if fg:
             ctx["fg"] = {k: v for k, v in fg.items() if k != "history"}
             ctx["fg_stats"] = fg_forward_stats(fg.get("history"), fg["score"])
+            try:      # v37: 그림·기록용 최근 이력(날짜 문자열 → 점수)
+                hs = fg["history"]["score"].dropna().tail(90)
+                ctx["fg_hist"] = {str(pd.Timestamp(i).date()): float(v) for i, v in hs.items()}
+            except Exception:
+                ctx["fg_hist"] = {}
     except Exception as e:
         print(f"⚠️ 공포탐욕지수 단계 실패(무시): {e}")
     try:
@@ -553,7 +558,9 @@ def collect(summaries, log_dir="logs", earnings_manual=None, today=None, fg_gett
             fg_row = ctx["fg"]
             # 공포탐욕 값은 그 값의 기준일이 우리 가격일과 같을 때만 그 날짜 행에 적는다(주말 실행·지연 시 다른 날 값이 섞이지 않게)
             if fg_row and fg_row.get("asof") is not None and pd.Timestamp(fg_row["asof"]).normalize() != price_date:
-                fg_row = None
+                # v37: 기준일이 다르면 CNN 이력에서 '가격일의 종가 값'을 찾아 점수만 적는다(11/16 수동 실행에서 F&G 열이 통째로 빠졌던 문제)
+                hv = (ctx.get("fg_hist") or {}).get(str(price_date.date()))
+                fg_row = {"score": hv, "rating": fg_bucket(hv), "asof": price_date, "components": {}} if hv is not None else None
             append_context(price_date, fg=fg_row, pcr=ctx["pcr"],
                            extra={"av_checked": ctx["price_checked"], "av_warn": len(ctx["price_warn"])} if ctx["av_used"] else None,
                            log_dir=log_dir)
@@ -572,16 +579,15 @@ def context_lines(ctx):
                 return "-" if v is None else f"{v:.0f}"
             lines.append(f"공포탐욕지수 {fg['score']:.0f} ({fg.get('bucket') or fg.get('rating')}) · 전일 {f(fg.get('prev_close'))} · 1주 전 {f(fg.get('prev_week'))} · 1달 전 {f(fg.get('prev_month'))}")
             comps = fg.get("components") or {}
-            if comps:
+            if len(comps) >= 3:      # v37: 7개를 다 늘어놓지 않고 양 끝만
                 lo = sorted(comps.items(), key=lambda kv: kv[1]["score"])
-                parts = [f"{FG_COMPONENTS.get(k, k)} {v['score']:.0f}" for k, v in lo]
-                lines.append("  └ 구성(0 공포~100 탐욕): " + " · ".join(parts))
+                lines.append(f"  └ 가장 겁먹은 쪽: {FG_COMPONENTS.get(lo[0][0], lo[0][0])} {lo[0][1]['score']:.0f} · {FG_COMPONENTS.get(lo[1][0], lo[1][0])} {lo[1][1]['score']:.0f}"
+                             f" / 가장 느긋한 쪽: {FG_COMPONENTS.get(lo[-1][0], lo[-1][0])} {lo[-1][1]['score']:.0f}  (0 공포~100 탐욕)")
             st = (ctx.get("fg_stats") or {}).get(20) or (ctx.get("fg_stats") or {}).get(5)
             if st:
                 h = 20 if (ctx.get("fg_stats") or {}).get(20) else 5
-                lines.append(f"  └ {st['since'][:4]}년 이후 같은 구간 뒤 S&P500 {h}거래일: 평균 {st['mean'] * 100:+.1f}% (전체 평균 {st['all_mean'] * 100:+.1f}%) · "
-                             f"흔들림 연 {st['vol'] * 100:.0f}% (전체 {st['all_vol'] * 100:.0f}%)")
-                lines.append(f"     독립 구간 {st['episodes']}개뿐인 과거 집계 — 예측이 아니며 3배 ETF에는 그대로 적용되지 않음")
+                lines.append(f"  └ 과거 같은 구간 뒤 S&P500 {h}일: 평균 {st['mean'] * 100:+.1f}% (평소 {st['all_mean'] * 100:+.1f}%) · 흔들림 {st['vol'] * 100:.0f}% (평소 {st['all_vol'] * 100:.0f}%)"
+                             f" — {st['since'][:4]}년 이후 {st['episodes']}번뿐, 예측 아님")
         ec = (ctx or {}).get("env_changes") or []
         if ec:
             lines.append("⚠️ 라이브러리 버전이 바뀜: " + ", ".join(ec[:6]) + " — 코드가 같아도 예측값이 달라질 수 있음(검증 시계 주의)")
@@ -591,9 +597,7 @@ def context_lines(ctx):
             lines += [f"  • {w}" for w in pw[:6]]
         elif (ctx or {}).get("price_checked"):
             lines.append(f"시세 교차확인: {ctx['price_checked']}종목 종가·거래일이 다른 출처(Alpha Vantage)와 일치")
-        pcr = (ctx or {}).get("pcr") or {}
-        if pcr:
-            lines.append("풋/콜 비율(전일, 기록용): " + " · ".join(f"{k} {v:.2f}" for k, v in pcr.items()))
+        # v37: 풋/콜 비율은 아직 해석 기준이 없는 숫자라 리포트에서 뺐다(logs/context_daily.csv 에는 계속 기록)
     except Exception:
         return lines
     return lines

@@ -171,7 +171,7 @@ def overlap(h_a, h_b):
 
 
 # ------------------------------------------------------------------ 2) 기여도
-def attribution(holdings, closes, lookbacks=(1, 5)):
+def attribution(holdings, closes, lookbacks=(1, 5), full_holdings=None):
     """
     closes: DataFrame(index=날짜 오름차순, 열=종목 종가). 반환 dict 또는 None.
       'asof'          : 마지막 종가일
@@ -190,10 +190,13 @@ def attribution(holdings, closes, lookbacks=(1, 5)):
         if px.shape[1] < 5 or len(px) < 2:
             return None
         out = {"asof": pd.Timestamp(px.index[-1]).normalize()}
-        tot = float(w.sum())
-        wn = w / tot if tot > 0 else w
-        out["top5_w"] = float(w.sort_values(ascending=False).head(5).sum())
+        # v37: 쏠림은 '전체 구성' 기준(상위 40개만으로 세면 S&P500 의 유효 종목 수가 17개처럼 작게 나옴)
+        wf = pd.Series({h["symbol"]: h["weight"] for h in (full_holdings or holdings)}, dtype=float)
+        tot = float(wf.sum())
+        wn = wf / tot if tot > 0 else wf
+        out["top5_w"] = float(wf.sort_values(ascending=False).head(5).sum())
         out["eff_n"] = float(1.0 / (wn ** 2).sum())
+        out["n_total"] = int(len(wf))
         for h in lookbacks:
             if len(px) <= h:
                 continue
@@ -214,7 +217,35 @@ def attribution(holdings, closes, lookbacks=(1, 5)):
         return None
 
 
-def fetch_closes(symbols, period="2mo"):
+def comovement(holdings, closes, symbol, window=40, min_days=20):
+    """
+    최근 window 거래일 동안 '그 종목이 1% 움직인 날 지수(구성종목 가중 추정)는 평균 몇 % 움직였나' (회귀 기울기).
+    비중만 곱한 '직접 효과'는 다른 종목이 같이 움직이는 것을 빼먹는다. 이 값은 그 동조까지 포함한 과거 평균이다(인과가 아니라 동행).
+    반환 {'beta', 'direct'(비중), 'n'} 또는 None.
+    """
+    try:
+        w = pd.Series({h["symbol"]: h["weight"] for h in holdings}, dtype=float)
+        if symbol not in w.index or closes is None or symbol not in closes.columns:
+            return None
+        cols = [c for c in w.index if c in closes.columns]
+        px = closes[cols].apply(pd.to_numeric, errors="coerce")
+        px = px.where(px > 0).sort_index().tail(window + 1)
+        r = px.pct_change().iloc[1:]
+        r = r.where(r.abs() < 0.9)
+        ww = w.reindex(cols)
+        cov = r.notna().mul(ww, axis=1).sum(axis=1)
+        idx = (r.fillna(0).mul(ww, axis=1).sum(axis=1) / cov).where(cov > 0.2)
+        x = r[symbol]
+        ok = x.notna() & idx.notna()
+        if ok.sum() < min_days or float(x[ok].var()) <= 0:
+            return None
+        beta = float(np.cov(x[ok], idx[ok])[0, 1] / x[ok].var())
+        return {"beta": beta, "direct": float(w[symbol] / w.sum() if w.sum() > 0 else w[symbol]), "n": int(ok.sum())}
+    except Exception:
+        return None
+
+
+def fetch_closes(symbols, period="3mo"):
     """yfinance 로 여러 종목 종가를 한 번에. 실패하면 None."""
     try:
         import yfinance as yf
@@ -401,23 +432,33 @@ def yf_fundamentals(symbol):
     return fundamentals_from_statements(g("quarterly_income_stmt"), g("quarterly_balance_sheet"), g("quarterly_cashflow"), info, g("eps_trend"))
 
 
-def aggregate_fundamentals(holdings, fund):
+def aggregate_fundamentals(holdings, fund, min_cov=0.6):
     """
-    비중 가중 평균으로 지수 단위 요약. fund: {종목: 지표 dict}. 항목마다 값이 있는 종목끼리만 가중(그 비중 합을 cov_* 로 함께 돌려줌).
+    지수 단위 요약(비중 가중 중앙값). fund: {종목: 지표 dict}. 항목마다 값이 있는 종목끼리만 쓰고 그 비중 합을 cov_* 로 함께 돌려준다.
     PER 은 이익수익률(1/PER)을 가중 평균한 뒤 뒤집는다(고PER 한 종목이 평균을 왜곡하지 않게).
     """
     out = {}
     w = {h["symbol"]: h["weight"] for h in holdings or []}
-    for key in ("rev_yoy", "rev_qoq", "gross_margin", "gm_chg_yoy", "op_margin", "dio", "dio_chg", "eps_rev30", "capex_yoy"):
-        num = den = 0.0
+    tot_w = sum(w.values())
+    for key in ("rev_yoy", "rev_qoq", "gross_margin", "gm_chg_yoy", "op_margin", "dio", "dio_chg", "eps_rev30"):
+        vals = []
         for s, ww in w.items():
             v = (fund.get(s) or {}).get(key)
             if v is None or not np.isfinite(v) or abs(v) > 1e4:
                 continue
-            num += ww * v
-            den += ww
-        if den > 0:
-            out[key] = num / den
+            vals.append((v, ww))
+        den = sum(x[1] for x in vals)
+        # v37: 값이 있는 종목의 비중이 추적 대상의 min_cov 미만이면 요약하지 않는다(첫 실행 때 4종목만으로 '매출 +155%'가 기록된 문제).
+        if den > 0 and (tot_w <= 0 or den / tot_w >= min_cov):
+            # 가중 중앙값: 한 종목의 극단값(예: 메모리 업체 매출 +379%)이 지수 요약을 끌고 가지 않게
+            vals.sort(key=lambda x: x[0])
+            acc, med = 0.0, vals[-1][0]
+            for v, ww in vals:
+                acc += ww
+                if acc >= den / 2:
+                    med = v
+                    break
+            out[key] = med
             out[f"cov_{key}"] = den
     num = den = 0.0
     for s, ww in w.items():
@@ -425,7 +466,7 @@ def aggregate_fundamentals(holdings, fund):
         if pe and pe > 0:
             num += ww / pe
             den += ww
-    if den > 0 and num > 0:
+    if den > 0 and num > 0 and (tot_w <= 0 or den / tot_w >= min_cov):
         out["fwd_pe"] = den / num
         out["cov_fwd_pe"] = den
     return out
@@ -625,8 +666,14 @@ def collect(log_dir="logs", report_dir="reports", today=None, seed_path=SEED_FIL
 
         for idx, h in hold.items():
             r = {"holdings_asof": h.get("asof"), "source": h.get("source"), "n_holdings": len(h["holdings"])}
-            r["attr"] = attribution(h["holdings"][:MAX_PRICE_NAMES], closes) if closes is not None else None
+            r["attr"] = attribution(h["holdings"][:MAX_PRICE_NAMES], closes, full_holdings=h["holdings"]) if closes is not None else None
+            r["weights"] = {x["symbol"]: x["weight"] for x in h["holdings"][:MAX_PRICE_NAMES]}
             r["earn"] = earnings_exposure(h["holdings"], earn_dates, td) if earn_dates else None
+            if closes is not None and r["earn"]:
+                for sym, _d, _w in r["earn"]["names"][:3]:       # 실적이 임박한 비중 상위 3종목만
+                    cm = comovement(h["holdings"][:MAX_PRICE_NAMES], closes, sym)
+                    if cm:
+                        r.setdefault("comove", {})[sym] = cm
             top = h["holdings"][:TOP_FOR_FUND]
             r["fund_agg"] = aggregate_fundamentals(top, fund)
             r["fund_n"] = sum(1 for x in top if (fund.get(x["symbol"]) or {}).get("quarter"))
@@ -658,8 +705,8 @@ def driver_lines(res):
             head = f"{meta['name']} ({meta['pair']})"
             if a and 1 in a:
                 c = a[1]["contrib"]
-                neg = [(k, v) for k, v in sorted(c.items(), key=lambda kv: kv[1]) if v < 0][:3]
-                pos = [(k, v) for k, v in sorted(c.items(), key=lambda kv: -kv[1]) if v > 0][:3]
+                neg = [(k, v) for k, v in sorted(c.items(), key=lambda kv: kv[1]) if v <= -0.0001][:3]      # 0.01%p 미만은 잡음이라 생략
+                pos = [(k, v) for k, v in sorted(c.items(), key=lambda kv: -kv[1]) if v >= 0.0001][:3]
                 d = pd.Timestamp(a["asof"])
                 lines.append(f"{head} {d.month}/{d.day}: 지수 추정 {_pct(a[1]['est'])} · 오른 종목 비중 {a[1]['up_weight'] * 100:.0f}%"
                              + (f" · 5일 {_pct(a[5]['est'])}" if 5 in a else ""))
@@ -670,7 +717,7 @@ def driver_lines(res):
                     parts.append("끌어내림 " + ", ".join(f"{k} {v * 100:+.2f}%p" for k, v in neg))
                 if parts:
                     lines.append("  └ " + " / ".join(parts))
-                lines.append(f"  └ 쏠림: 상위5 비중 {a['top5_w'] * 100:.0f}% · 유효 종목 수 {a['eff_n']:.0f}개 (계산에 쓴 비중 {a[1]['covered'] * 100:.0f}%)")
+                lines.append(f"  └ 쏠림: 상위5가 {a['top5_w'] * 100:.0f}% · 사실상 {a['eff_n']:.0f}종목처럼 움직임 (전체 {a.get('n_total', a[1]['n'])}종목)")
             else:
                 lines.append(f"{head}: 구성종목 시세를 받지 못해 기여도 생략")
             e = r.get("earn")
@@ -695,7 +742,7 @@ def driver_lines(res):
                 if "eps_rev30" in f:
                     bits.append(f"EPS추정 30일 {_pct(f['eps_rev30'], 1)}")
                 if bits:
-                    lines.append(f"  └ 체력(상위 {r['fund_n']}종목 가중): " + " · ".join(bits))
+                    lines.append(f"  └ 체력(상위 {r['fund_n']}종목 중앙값): " + " · ".join(bits))
         ov = (res or {}).get("overlap")
         if ov and ov[0] == ov[0] and ov[1] > 0:
             lines.append(f"겹침: 나스닥100의 {ov[0] * 100:.0f}%가 반도체지수 종목({ov[1]}개) → TQQQ와 SOXL은 상당 부분 같은 베팅")

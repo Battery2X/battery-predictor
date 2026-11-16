@@ -62,6 +62,18 @@ ck("기여도: 지수 추정 = 기여 합 / 쓴 비중 합", abs(a[1]["est"] - (
 ck("기여도: 오른 종목 비중·개수", abs(a[1]["up_weight"] - w[r1 > 0].sum() / w.sum()) < 1e-12 and a[1]["up_count"] == int((r1 > 0).sum()))
 ck("기여도: 5일 수익률은 5거래일 전 대비", abs(a[5]["est"] - (w * (px.iloc[-1] / px.iloc[-6] - 1)).sum() / w.sum()) < 1e-12)
 ck("기여도: 쏠림(상위5 비중·유효 종목 수)", abs(a["top5_w"] - 0.65) < 1e-12 and abs(a["eff_n"] - 1 / ((w / w.sum()) ** 2).sum()) < 1e-9)
+full = hold + [{"symbol": f"Z{k}", "weight": 0.0015} for k in range(100)]
+af = ed.attribution(hold, px, full_holdings=full)
+ck("기여도(v37): 쏠림은 전체 구성 기준(가격은 상위만 써도 유효 종목 수는 전체로)", af["n_total"] == 110 and af["eff_n"] > a["eff_n"] and af[1]["est"] == a[1]["est"])
+# ---- 동조도
+mk = np.random.default_rng(2).normal(0, 0.02, 60)
+cd = pd.bdate_range("2026-08-20", periods=61)
+cp = pd.DataFrame({s: 100 * np.exp(np.cumsum(np.r_[0, mk * (2.0 if s == "S0" else 1.0)])) for s in syms}, index=cd)
+cm = ed.comovement(hold, cp, "S0", window=60)
+idx_ret = sum(w[s] * (2.0 if s == "S0" else 1.0) for s in syms) / w.sum()     # 지수 = 시장 × 이 값, S0 = 시장 × 2
+ck("동조도: 종목이 시장의 2배로 움직이면 기울기 = 지수 민감도/2 (로그·단순 수익률 차이 허용)", abs(cm["beta"] - idx_ret / 2.0) < 0.02 and abs(cm["direct"] - 0.2 / 0.85) < 1e-9)
+ck("동조도: 직접 효과(비중)보다 큼 = 같이 움직임이 반영됨", cm["beta"] > cm["direct"])
+ck("동조도: 없는 종목·짧은 이력·None → None", ed.comovement(hold, cp, "NOPE") is None and ed.comovement(hold, cp.tail(10), "S0") is None and ed.comovement(hold, None, "S0") is None)
 px2 = px.copy(); px2.iloc[-1, 0] = px2.iloc[-2, 0] * 20      # 분할·오류로 보이는 값
 a2 = ed.attribution(hold, px2)
 ck("기여도: 하루 +1900% 같은 값은 제외", "S0" not in a2[1]["contrib"] and a2[1]["n"] == 9)
@@ -110,10 +122,13 @@ ck("재무: 재고·원가가 없는 업종(은행 등)은 재고일수 None", f
 
 fund = {"S0": {"rev_yoy": 0.5, "gross_margin": 0.6, "fwd_pe": 20.0, "quarter": "x"}, "S1": {"rev_yoy": 0.1, "gross_margin": None, "fwd_pe": 40.0, "quarter": "x"},
         "S2": {"rev_yoy": float("nan"), "fwd_pe": None}}
-ag = ed.aggregate_fundamentals(hold[:3], fund)
-ck("가중 요약: 값이 있는 종목끼리만 가중(매출 성장)", abs(ag["rev_yoy"] - (0.2 * 0.5 + 0.15 * 0.1) / 0.35) < 1e-12 and abs(ag["cov_rev_yoy"] - 0.35) < 1e-12)
+ag = ed.aggregate_fundamentals(hold[:3], fund)       # 비중 0.2/0.15/0.12, 값 있는 비중 0.35/0.47 = 74%
+ck("가중 요약(v37): 가중 중앙값 — 비중 큰 쪽 값", ag["rev_yoy"] == 0.5 and abs(ag["cov_rev_yoy"] - 0.35) < 1e-12)
 ck("가중 요약: PER 은 이익수익률 가중(조화평균)", abs(ag["fwd_pe"] - 0.35 / (0.2 / 20 + 0.15 / 40)) < 1e-12)
-ck("가중 요약: 한 종목만 값이 있는 항목도 그 종목 기준, 아무도 없으면 키 없음", abs(ag["gross_margin"] - 0.6) < 1e-12 and "dio" not in ag)
+ck("가중 요약(v37): 값 있는 종목 비중이 60% 미만인 항목은 요약하지 않음", "gross_margin" not in ag and "dio" not in ag)
+ck("가중 요약(v37): 기준을 낮추면 한 종목만으로도 계산", abs(ed.aggregate_fundamentals(hold[:3], fund, min_cov=0.0)["gross_margin"] - 0.6) < 1e-12)
+skew = {"S0": {"rev_yoy": 0.3}, "S1": {"rev_yoy": 0.4}, "S2": {"rev_yoy": 3.8}}        # 한 종목이 +380%
+ck("가중 요약(v37): 극단값 한 종목이 요약을 끌고 가지 않음(중앙값 0.4, 평균이면 1.2)", ed.aggregate_fundamentals(hold[:3], skew)["rev_yoy"] == 0.4)
 ck("가중 요약: 빈 입력 → {}", ed.aggregate_fundamentals([], fund) == {} and ed.aggregate_fundamentals(hold, {}) == {})
 cx = ed.hyperscaler_capex({s: {"capex": 100.0, "capex_yoy": 0.25} for s in ed.HYPERSCALERS})
 ck("빅테크 설비투자: 4사 합과 전년비", cx["sum"] == 400.0 and abs(cx["yoy"] - 0.25) < 1e-12)
@@ -177,6 +192,8 @@ with tempfile.TemporaryDirectory() as td:
         res3 = ed.collect(lg, rp, today=T, closes_fetch=fake_closes, fund_fetch=fake_fund, sleeper=nosleep, use_network=False)
     lines3 = ed.driver_lines(res3)
     ck("리포트 줄: 재무가 5종목 이상 차면 체력 줄(매출·이익률·재고·PER·EPS추정)", any("체력" in l and "매출 +50%" in l and "재고" in l for l in lines3 if True) and any("빅테크 4사 설비투자" in l and "+50%" in l for l in lines3))
+    ck("collect(v37): 실적 임박 종목의 동조도를 계산해 둠", "NVDA" in (res3["indexes"]["SOXX"].get("comove") or {}))
+    ck("리포트 줄(v37): 0.01%p 미만 기여는 표시하지 않음", not any("+0.00%p" in l or "-0.00%p" in l for l in lines3))
     ck("리포트 줄: 재고일수는 반도체지수에만 표시", sum("재고" in l for l in lines3) == 1)
 
     # ---- 요약 리포트 조립

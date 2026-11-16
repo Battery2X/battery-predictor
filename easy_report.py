@@ -472,8 +472,8 @@ def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_k
             sm = next((v for v in hs.values() if v.get('breadth')), None)
             if sm:
                 br = sm['breadth']
-                lines.append(f"  └ 반도체 구성종목 상승비율 {br['up_share']*100:.0f}% · 5일 모멘텀 "
-                             f"{br['momentum5']*100:+.1f}%")
+                lines.append(f"  └ 모델 입력값(5일 기준): 반도체 상위10 중 5일간 오른 비율 {br['up_share']*100:.0f}% · 5일 모멘텀 "
+                             f"{br['momentum5']*100:+.1f}%")   # v37: 'ETF 속 들여다보기'의 1일 수치와 헷갈리지 않게 기준을 명시
         lines.append("검증: ✅통과 ❌못함 ⏳표본부족(독립 관측 15건 미만)")
         sections.append("\n".join(lines))
 

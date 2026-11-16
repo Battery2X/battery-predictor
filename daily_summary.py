@@ -6,6 +6,7 @@ daily_summary.py — 6개 예측 스크립트가 끝난 뒤 실행되어 '쉬운
 - 상세 리포트는 reports/detail_*.txt 에 저장돼 있다. 텔레그램으로 상세도 받으려면
   워크플로우 env 에 SEND_DETAIL=1 을 추가한다.
 """
+import os
 import traceback
 from datetime import datetime
 
@@ -120,6 +121,16 @@ def run():
         print(f"⚠️ 방향 성적표 저장 실패(무시): {e}")
 
     sections = build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_kst, risk=risk)
+    if os.environ.get('REPORT_STYLE') != 'classic':      # v37: 한눈 요약 + 이벤트 카드 + 접어 두기 + 헤드라인 번역 + 그림 한 장(실패하면 기존 형식)
+        try:
+            import common as _cm
+            import report_layout as _rl
+            png = _rl.dashboard_png(summaries, risk, now_kst)
+            if png:      # 저장소에는 넣지 않는다(매일 130KB 이진 파일이 쌓이면 저장소가 불어남) — 텔레그램으로만 보냄
+                _rl.send_photo(png, caption=f"{now_kst.month}/{now_kst.day} 위험 상황 그림 (낙폭 · 공포탐욕 · 반도체지수 기여 · 실적 일정)")
+            sections = _rl.restyle(sections, summaries, risk, now_kst, headlines=headlines, stale=stale)
+        except Exception as e:
+            print(f"⚠️ 리포트 재배치 단계 실패(기존 형식으로 전송): {e}")
     messages = chunk_sections(sections)
     for m in messages:
         print(m + "\n" + "=" * 40)

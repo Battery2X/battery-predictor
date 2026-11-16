@@ -1314,7 +1314,7 @@ def make_prediction_record(run_date, benchmark, ticker, horizon_days, up_prob, r
 # ============================================================
 # 8) 텔레그램 알림
 # ============================================================
-_TG_TAG = re.compile(r"</?(?:b|i|u|s|em|strong|code|pre|a)(?:\s[^>]*)?>", re.I)
+_TG_TAG = re.compile(r"</?(?:blockquote|b|i|u|s|em|strong|code|pre|a)(?:\s[^>]*)?>", re.I)   # v37: 접어 두기(blockquote)도 평문 재전송 때 제거
 TG_MAX = 4000   # 텔레그램 한도(4096)보다 여유
 
 

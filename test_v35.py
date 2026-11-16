@@ -187,7 +187,8 @@ with tempfile.TemporaryDirectory() as td:
     ck("collect: 맥락 로그에 가격일 1행", len(c) == 1 and c.price_date.iloc[0] == '2026-11-13' and float(c.fg_score.iloc[0]) == 38.6)
     ck("collect: AV 호출 수가 예산 이내", mc._AV_STATE['calls'] <= mc.AV_DAILY_BUDGET)
     lines = mc.context_lines(ctx)
-    ck("리포트 줄: 지수·구성·과거 집계·교차확인·풋콜", any('공포탐욕지수 39' in l for l in lines) and any('독립 구간' in l for l in lines) and any('교차확인' in l for l in lines) and any('풋/콜' in l for l in lines))
+    ck("리포트 줄: 지수·과거 집계·교차확인은 표시, 풋콜은 표시하지 않고 로그에만(v37)", any('공포탐욕지수 39' in l for l in lines) and any('번뿐, 예측 아님' in l for l in lines) and any('교차확인' in l for l in lines)
+       and not any('풋/콜' in l for l in lines) and 'pcr_SOXL' in c.columns)
     reset_av(None)
     with tempfile.TemporaryDirectory() as td2:
         ctx2 = mc.collect(summ('2026-11-12'), td2, fg_getter=lambda u: payload(), sleeper=nosleep)

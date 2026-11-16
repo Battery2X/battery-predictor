@@ -1,7 +1,11 @@
-yfinance
-pandas
-numpy
-scikit-learn
-xgboost
-lightgbm
+# v37: 예측에 영향을 주는 라이브러리는 2026-11-16 실제 실행 환경(reports/env_versions.json)의 버전으로 고정한다.
+# 버전이 올라가면 코드가 같아도 예측값이 달라질 수 있다(= 모르는 사이의 검증 시계 오염). 올릴 때는 의도적으로, 기록을 남기고.
+numpy==2.2.6
+pandas==2.3.3
+scikit-learn==1.7.2
+xgboost==3.2.0
+lightgbm==4.7.0
+# 데이터 수집·표시용(야후 쪽 변경에 대응해야 하므로 하한만)
+yfinance>=1.8.0
 requests
+matplotlib>=3.8
