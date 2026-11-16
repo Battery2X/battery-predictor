@@ -393,6 +393,17 @@ def build_sections(summaries, stale, hot, hot_age, events, btc, headlines, now_k
                          f" · 30일고점대비 {_pct(btc['from_high30'],1,True)} (주식 선행 여부는 아직 검증 전)")
         sections.append("\n".join(lines))
 
+    # ---- 시장 심리·데이터 점검 (v35: 공포탐욕지수 · 다른 출처 시세 교차확인. 모델 입력이 아닌 표시) ----
+    try:
+        _ctx = (risk or {}).get('_context') if isinstance(risk, dict) else None
+        if _ctx:
+            import market_context as _mc
+            _cl = _mc.context_lines(_ctx)
+            if _cl:
+                sections.append("🌡️ <b>3. 시장 심리·데이터 점검</b> (참고 표시 · 모델 입력 아님)\n" + "\n".join(_e(x) for x in _cl))
+    except Exception:
+        pass
+
     # ---- 3. 일정 ----
     if events:
         lines = ["📅 <b>3. 앞으로 14일 일정</b>"]

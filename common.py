@@ -706,6 +706,7 @@ def _train_benchmark_model_impl(benchmark, macro_df, horizon_days, threshold_cap
         'dead_zone': df['DeadZone_Ratio'].iloc[-1],
         'top_features': top_features,
         'calib_unclamped': _unclamped * 100, 'calib_clamped': clamped,
+        'asof': pd.Timestamp(df.index[-1]).normalize(),   # v35: 이 예측에 쓴 마지막 봉의 날짜(기록 전 정합성 확인용, 예측값과 무관)
     }
 
 
@@ -727,6 +728,27 @@ def train_benchmark_model(benchmark, macro_df, horizon_days, threshold_cap, *arg
         LAST_TRAIN_ERRORS[benchmark] = f"{type(e).__name__}: {e}"
         print(f"❌ [{benchmark}] 학습 중 예외(이 벤치마크만 스킵): {type(e).__name__}: {e}")
         print(_tb.format_exc()[-1500:])
+        return None
+
+
+def data_date_mismatch(result, metrics):
+    """
+    v35 기록 전 정합성 확인(예측값·모델과 무관): 모델이 본 마지막 봉의 날짜(result['asof'])와
+    기록할 가격의 날짜(metrics['price_date'])가 다르면 안내 문자열을, 같거나 확인할 수 없으면 None 을 돌려준다.
+    왜: 벤치마크(QQQ 등)와 실제 종목(TQQQ 등)은 따로 내려받는다. 한쪽만 시세가 갱신되지 않으면
+    '어제까지의 정보로 한 예측'이 '오늘 종가 기준 예측'으로 기록되어 하루 어긋난 채 채점된다
+    (외부 종가 대조에서 2026-09-23 실행분이 종목별로 갱신 상태가 달랐던 것이 확인됨).
+    """
+    try:
+        a, p = result.get('asof'), metrics.get('price_date')
+        if a is None or p is None or pd.isna(a) or pd.isna(p):
+            return None
+        a, p = pd.Timestamp(a).normalize(), pd.Timestamp(p).normalize()
+        if a == p:
+            return None
+        return (f"⚠️ 시세 날짜 불일치(모델 입력 {a.date()} vs 기록 가격 {p.date()}) — 한쪽 시세가 갱신되지 않은 것으로 보여 "
+                f"이번 회차는 기록하지 않음")
+    except Exception:
         return None
 
 

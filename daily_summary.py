@@ -93,6 +93,17 @@ def run():
     except Exception as e:
         print(f"⚠️ 달력 점검 실패(무시): {e}")
 
+    try:      # v35: 시장 맥락(공포탐욕지수 · Alpha Vantage 교차확인 · 엣지/맥락 로그). 모델 입력 아님, 실패해도 무시
+        import common as _cm
+        import market_context as _mc
+        ctx = _mc.collect(summaries, _cm.LOG_DIR, earnings_manual=STOCK_EARNINGS_DATES, today=now_kst.date(), report_dir=_cm.REPORT_DIR)
+        if isinstance(risk, dict):
+            risk['_context'] = ctx
+            if ctx.get('earnings_notes'):
+                risk['_calendar_warn'] = list(risk.get('_calendar_warn') or []) + list(ctx['earnings_notes'])
+    except Exception as e:
+        print(f"⚠️ 시장 맥락 수집 실패(무시): {e}")
+
     try:      # v34: 방향 성적표(항상상승 기준선·Brier·독립 구간 수)를 reports/ 에 저장. 로그는 읽기만 함(실패해도 무시)
         import common as _cm
         import direction_scorecard as _ds

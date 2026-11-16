@@ -5,6 +5,8 @@ predict_swing.py — 스윙(1~2주 방향성) 예측 (v23.0)
 import traceback
 import pandas as pd
 
+import common
+
 from common import (
     LEVERAGE_UNIVERSE, BENCHMARK_TICKERS,
     fetch_macro_data, fetch_display_metrics, train_benchmark_model, fetch_constituent_breadth_features,
@@ -68,6 +70,10 @@ def run():
             metrics = fetch_display_metrics(ticker)
             if metrics is None:
                 report += f"  📌 {ticker}: ⚠️ 시세 조회 실패 — 이번 회차 스킵\n"
+                continue
+            _mm = common.data_date_mismatch(result, metrics)     # v35: 모델 입력 날짜와 기록 가격 날짜가 다르면 기록하지 않음
+            if _mm:
+                report += f"  📌 {ticker}: {_mm}\n"
                 continue
 
             up_prob, down_prob = apply_direction(result['up_prob'], result['down_prob'], meta['direction'])
