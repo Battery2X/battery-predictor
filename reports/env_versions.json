@@ -1,0 +1,13 @@
+{
+ "versions": {
+  "python": "3.10.22",
+  "numpy": "2.2.6",
+  "pandas": "2.3.3",
+  "scikit-learn": "1.7.2",
+  "xgboost": "3.2.0",
+  "lightgbm": "4.7.0",
+  "yfinance": "1.8.0"
+ },
+ "since": "2026-11-16",
+ "history": []
+}

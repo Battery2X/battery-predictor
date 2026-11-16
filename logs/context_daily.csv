@@ -1,0 +1,2 @@
+run_date,ticker,horizon_days,price_date,logged_at,pcr_SPY,pcr_QQQ,pcr_SMH,pcr_SOXL,pcr_NVDA,av_checked,av_warn
+2026-11-13,_MARKET,0,2026-11-13,2026-11-16 13:04:02.958590,1.21,1.05,2.99,0.89,0.75,6,0
