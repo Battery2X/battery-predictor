@@ -1,2 +1,3 @@
-run_date,ticker,horizon_days,price_date,logged_at,pcr_SPY,pcr_QQQ,pcr_SMH,pcr_SOXL,pcr_NVDA,av_checked,av_warn,fg_score,fg_rating,fg_asof
-2026-11-13,_MARKET,0,2026-11-13,2026-11-16 13:04:02.958590,1.21,1.05,2.99,0.89,0.75,6,0,38.1142857142857,공포,2026-11-13
+run_date,ticker,horizon_days,price_date,logged_at,pcr_SPY,pcr_QQQ,pcr_SMH,pcr_SOXL,pcr_NVDA,av_checked,av_warn,fg_score,fg_rating,fg_asof,fg_prev_close,fg_prev_week,fg_market_momentum_sp500,fg_stock_price_strength,fg_stock_price_breadth,fg_put_call_options,fg_market_volatility_vix,fg_junk_bond_demand,fg_safe_haven_demand
+2026-11-13,_MARKET,0,2026-11-13,2026-11-16 13:04:02.958590,1.21,1.05,2.99,0.89,0.75,6,0,38.1142857142857,공포,2026-11-13,,,,,,,,,
+2026-11-16,_MARKET,0,2026-11-16,2026-11-17 08:02:55.295602,1.37,1.04,1.99,0.8,0.73,6,0,30.9619047619048,fear,2026-11-16,31.0190476190476,37.3714285714286,9.2,41.4,49.4,19.6,33.3333333333333,52.0,11.8
