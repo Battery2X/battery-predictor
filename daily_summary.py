@@ -136,6 +136,11 @@ def run():
         _sec = _ut.status_section()
         if _sec:
             sections.append(_sec)
+        _xs = os.path.join('reports', 'xs_status.txt')   # v40: 교차종목 예측(표시 전용, predict.yml 이 앞 단계에서 작성)
+        if os.path.exists(_xs):
+            _t = open(_xs, encoding='utf-8').read().strip()
+            if _t:
+                sections.append(_t)
     except Exception as e:
         print(f"⚠️ 규칙 상태 섹션 생략(무시): {e}")
     messages = chunk_sections(sections)

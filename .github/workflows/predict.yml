@@ -93,14 +93,15 @@ jobs:
         run: python predict_stock_position.py
 
       # ---- 쉬운 요약 리포트 (6개 실행 후, 로그는 읽기만 함 → 검증 시계 영향 없음) ----
-      - name: 🧪 확장 종목 규칙 상태 기록 + 실전 전략 시뮬레이션 (v39, 읽기 전용 · 방향 모델 무관)
+      - name: 🧪 확장 종목 규칙 상태 + 실전 전략 시뮬레이션 + 교차종목 다음날 예측 기록 (v39·v40, 방향 모델 무관)
         continue-on-error: true
-        timeout-minutes: 10
+        timeout-minutes: 20
         env:
           PYTHONUNBUFFERED: "1"
         run: |
           python universe_tracker.py daily logs reports || true
           python strategy_sim.py live logs reports || true
+          python xs_predictor.py daily logs reports || true
 
       - name: 🧭 쉬운 요약 리포트 (daily_summary.py, 위험판·일정·핫이슈·뉴스)
         continue-on-error: true

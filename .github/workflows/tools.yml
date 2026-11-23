@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       tool:
-        description: "scorecard = 방향 성적표(읽기 전용) / extaudit = 외부 종가 대조(읽기 전용, external/*.csv) / resettle = 과거 정산 재채점 / btc = 비트코인 선행성 검정 / backtest = 워크포워드 백테스트(읽기 전용) / volbt = 변동성 후보 비교(읽기 전용) / stratsim = 전략 수익률·낙폭 시뮬레이션(읽기 전용) / universe = 확장 종목 백필(읽기 전용)"
+        description: "scorecard = 방향 성적표(읽기 전용) / extaudit = 외부 종가 대조(읽기 전용, external/*.csv) / resettle = 과거 정산 재채점 / btc = 비트코인 선행성 검정 / backtest = 워크포워드 백테스트(읽기 전용) / volbt = 변동성 후보 비교(읽기 전용) / stratsim = 전략 수익률·낙폭 시뮬레이션(읽기 전용) / universe = 확장 종목 백필(읽기 전용) / xsbt = 교차종목 다음날 예측 워크포워드(읽기 전용)"
         required: true
         type: choice
-        options: [resettle, btc, backtest, variants, volbt, scorecard, extaudit, stratsim, universe]
+        options: [resettle, btc, backtest, variants, volbt, scorecard, extaudit, stratsim, universe, xsbt]
       bt_start:
         description: "backtest 전용: 시작일(기본 2026-01-01)"
         required: false
@@ -130,6 +130,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           python push_logs.py "${GITHUB_REF_NAME}" "chore: universe backfill report [skip ci]" reports/universe_backfill.txt reports/universe_backfill.json
+      - name: 교차종목 다음날 예측 워크포워드 (읽기 전용, 로그는 건드리지 않음)
+        if: ${{ inputs.tool == 'xsbt' }}
+        run: |
+          mkdir -p reports
+          python test_v40.py
+          python xs_predictor.py backtest reports
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          python push_logs.py "${GITHUB_REF_NAME}" "chore: xs backtest report [skip ci]" reports/xs_backtest.txt reports/xs_backtest.json
       - name: 방향 성적표 · 외부 종가 대조 (로그는 건드리지 않음)
         if: ${{ inputs.tool == 'scorecard' || inputs.tool == 'extaudit' }}
         run: |
