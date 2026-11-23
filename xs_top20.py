@@ -246,8 +246,10 @@ def main(argv):
     if cfg is None or "top20_v43" not in cfg:
         print("설정 없음 — 생략")
         return 0
-    if mode == "compare":
+    if mode in ("compare", "compare_wide"):
         out_dir = argv[2] if len(argv) > 2 else "reports"
+        if mode == "compare_wide":
+            cfg = dict(cfg, universe=cfg["wide_v45"]["universe"])
         panel = xp.load_panel(cfg)
         if panel is None:
             return 0
@@ -257,10 +259,13 @@ def main(argv):
             print("평가 불가 — 생략")
             return 0
         txt = render_cmp(res, cfg)
-        print(txt)
         os.makedirs(out_dir, exist_ok=True)
-        open(os.path.join(out_dir, "top20_compare.txt"), "w", encoding="utf-8").write(txt + "\n")
-        json.dump(res, open(os.path.join(out_dir, "top20_compare.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
+        print(txt)
+        stem = "top20_compare_wide" if mode == "compare_wide" else "top20_compare"
+        if mode == "compare_wide":
+            txt = txt.replace("=== ", f"=== [넓은 종목군 {panel['ticker'].nunique()}개 실제 확보] ", 1)
+        open(os.path.join(out_dir, stem + ".txt"), "w", encoding="utf-8").write(txt + "\n")
+        json.dump(res, open(os.path.join(out_dir, stem + ".json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
         return 0
     if mode == "backtest":
         out_dir = argv[2] if len(argv) > 2 else "reports"

@@ -136,7 +136,7 @@ def run():
         _sec = _ut.status_section()
         if _sec:
             sections.append(_sec)
-        for _f in ('top20_status.txt',):   # v43: 20일 상위10% 전략(표시 전용)
+        for _f in ('paper_status.txt', 'top20_status.txt'):   # v43: 20일 상위10% 전략(표시 전용)
             _p = os.path.join('reports', _f)
             if os.path.exists(_p):
                 _t2 = open(_p, encoding='utf-8').read().strip()

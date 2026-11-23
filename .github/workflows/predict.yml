@@ -103,6 +103,7 @@ jobs:
           python strategy_sim.py live logs reports || true
           python xs_predictor.py daily logs reports || true
           python xs_top20.py daily logs reports || true
+          python paper_trade.py run paper reports || true
 
       - name: 🧭 쉬운 요약 리포트 (daily_summary.py, 위험판·일정·핫이슈·뉴스)
         continue-on-error: true
@@ -120,7 +121,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # v28: push 가 거절되면(원격이 먼저 앞서간 경우 등) CSV 를 행 단위로 합쳐 재시도한다.
           # 끝내 실패하면 rescue_logs/ 에 보존하고 실패 처리 → 아래 artifact 단계가 저장.
-          python push_logs.py "${GITHUB_REF_NAME}" "chore: update prediction logs [skip ci]" logs reports
+          python push_logs.py "${GITHUB_REF_NAME}" "chore: update prediction logs [skip ci]" logs reports paper
 
       - name: 🛟 push 실패 시 로그 보존 (artifact)
         if: failure()
