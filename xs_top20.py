@@ -353,7 +353,7 @@ def render_cmp(res, cfg):
     pc = lambda x, d=1: f"{x * 100:+.{d}f}%"
     nm = {"MODEL": "모델(V0)", "VOL60": "변동성 상위", "MOM60": "60일 수익률 상위", "RANDOM": "무작위"}
     L = ["=== '20일 상위 10%' 모델 vs 단순 규칙 (같은 날짜·종목·비용·교체주기, 시작일 20가지 · 백테스트 · 실전 성적 아님) ===",
-         f"29종목 고르게 보유: 연평균 {pc(res['MODEL']['cagr_ew'])}", ""]
+         f"{len(cfg['universe'])}종목 고르게 보유: 연평균 {pc(res['MODEL']['cagr_ew'])}", ""]
     for k in ("MODEL", "VOL60", "MOM60", "RANDOM"):
         r = res[k]
         L.append(f"  {nm[k]:<12} 연평균 {pc(r['cagr_med'])} (범위 {pc(r['cagr_min'])}~{pc(r['cagr_max'])}) · 최대낙폭 {pc(r['mdd_med'])} · "
