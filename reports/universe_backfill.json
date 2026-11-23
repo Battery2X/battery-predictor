@@ -1,0 +1,1965 @@
+{
+ "items": {
+  "SOXL": {
+   "group": "index3x",
+   "lev": 3,
+   "under": "SMH",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 79.62490492836756,
+     "cagr": 0.2975444994640879,
+     "ann_vol": 0.8964275741862489,
+     "mdd": -0.9025298323846649,
+     "longest_underwater_days": 768,
+     "worst_day": -0.4327010529218567,
+     "exposure": 1.0,
+     "recovery_needed": 9.259549403326035,
+     "vs_hold": {
+      "hold_total": 79.62490492836756,
+      "hold_mdd": -0.9025298323846649,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 124.32561303235471,
+     "cagr": 0.3319542126653583,
+     "ann_vol": 0.7154966636749522,
+     "mdd": -0.7270360653100973,
+     "longest_underwater_days": 900,
+     "worst_day": -0.29538596896350244,
+     "exposure": 0.812338121026607,
+     "recovery_needed": 2.6634876366947076,
+     "vs_hold": {
+      "hold_total": 79.62490492836756,
+      "hold_mdd": -0.9025298323846649,
+      "daily_logdiff_ci": [
+       0.00010386335265980901,
+       -0.0008062689863815049,
+       0.0009395321013712231
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 36.792809136238084,
+     "cagr": 0.24050110004843805,
+     "ann_vol": 0.7167161883729857,
+     "mdd": -0.7857961548808055,
+     "longest_underwater_days": 1163,
+     "worst_day": -0.31707872649103164,
+     "exposure": 0.7836119613845067,
+     "recovery_needed": 3.6684502766210674,
+     "vs_hold": {
+      "hold_total": 79.62490492836756,
+      "hold_mdd": -0.9025298323846649,
+      "daily_logdiff_ci": [
+       -0.00017840563830812827,
+       -0.0011393855865929564,
+       0.00063859550297683
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 73.28101307808706,
+     "cagr": 0.2912502236389882,
+     "ann_vol": 0.7722652776367996,
+     "mdd": -0.8313754642085259,
+     "longest_underwater_days": 768,
+     "worst_day": -0.33672007660077474,
+     "exposure": 0.9187661878973393,
+     "recovery_needed": 4.930335080279352,
+     "vs_hold": {
+      "hold_total": 79.62490492836756,
+      "hold_mdd": -0.9025298323846649,
+      "daily_logdiff_ci": [
+       -1.9296496562739857e-05,
+       -0.0008486157954921403,
+       0.0006545808488877675
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 36.24505216060141,
+     "cagr": 0.23942693129773907,
+     "ann_vol": 0.8746538708679729,
+     "mdd": -0.9025298323846649,
+     "longest_underwater_days": 768,
+     "worst_day": -0.4327010529218567,
+     "exposure": 0.9950553331763597,
+     "recovery_needed": 9.259549403326035,
+     "vs_hold": {
+      "hold_total": 79.62490492836756,
+      "hold_mdd": -0.9025298323846649,
+      "daily_logdiff_ci": [
+       -0.00018184329828875942,
+       -0.0004638135159997897,
+       4.917211553224874e-05
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2010-03-12",
+     "2026-11-20"
+    ],
+    "realized_lev": 3.065987332675378,
+    "hold": {
+     "days": 4201,
+     "total": 50.426344982272404,
+     "cagr": 0.2666210457467544,
+     "ann_vol": 0.933235515129351,
+     "mdd": -0.9046051387124712,
+     "longest_underwater_days": 1043,
+     "worst_day": -0.38707260430662616,
+     "exposure": 1.0,
+     "recovery_needed": 9.482744945620379
+    }
+   }
+  },
+  "TQQQ": {
+   "group": "index3x",
+   "lev": 3,
+   "under": "QQQ",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 83.20484848904832,
+     "cagr": 0.3008936857322544,
+     "ann_vol": 0.6232779079720653,
+     "mdd": -0.8214031686096586,
+     "longest_underwater_days": 659,
+     "worst_day": -0.35971624390107526,
+     "exposure": 1.0,
+     "recovery_needed": 4.599203480908342,
+     "vs_hold": {
+      "hold_total": 83.20484848904832,
+      "hold_mdd": -0.8214031686096586,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 41.65224232129163,
+     "cagr": 0.24943662897610341,
+     "ann_vol": 0.4834840398088553,
+     "mdd": -0.5710825417961418,
+     "longest_underwater_days": 650,
+     "worst_day": -0.20874519086560797,
+     "exposure": 0.8566046621144338,
+     "recovery_needed": 1.3314509140933932,
+     "vs_hold": {
+      "hold_total": 83.20484848904832,
+      "hold_mdd": -0.8214031686096586,
+      "daily_logdiff_ci": [
+       -0.00016015367438139012,
+       -0.0007948654535265532,
+       0.0004271967201184666
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 20.64303425426905,
+     "cagr": 0.20014146265948907,
+     "ann_vol": 0.484490115541302,
+     "mdd": -0.7262432075762104,
+     "longest_underwater_days": 907,
+     "worst_day": -0.27542685076212037,
+     "exposure": 0.8354132328702614,
+     "recovery_needed": 2.652877399483658,
+     "vs_hold": {
+      "hold_total": 83.20484848904832,
+      "hold_mdd": -0.8214031686096586,
+      "daily_logdiff_ci": [
+       -0.0003198890613067113,
+       -0.0010051714082379003,
+       0.0002940475434590893
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 26.975357917250566,
+     "cagr": 0.21855709527841571,
+     "ann_vol": 0.522379032309369,
+     "mdd": -0.8539134198135467,
+     "longest_underwater_days": 1129,
+     "worst_day": -0.19502012493563184,
+     "exposure": 0.9058158700259006,
+     "recovery_needed": 5.84525572933311,
+     "vs_hold": {
+      "hold_total": 83.20484848904832,
+      "hold_mdd": -0.8214031686096586,
+      "daily_logdiff_ci": [
+       -0.00025946043190424114,
+       -0.0007934397840295141,
+       0.00031245745325529114
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 83.20484848904832,
+     "cagr": 0.3008936857322544,
+     "ann_vol": 0.6232779079720653,
+     "mdd": -0.8214031686096586,
+     "longest_underwater_days": 659,
+     "worst_day": -0.35971624390107526,
+     "exposure": 1.0,
+     "recovery_needed": 4.599203480908342,
+     "vs_hold": {
+      "hold_total": 83.20484848904832,
+      "hold_mdd": -0.8214031686096586,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2010-02-12",
+     "2026-11-20"
+    ],
+    "realized_lev": 2.9563747288012103,
+    "hold": {
+     "days": 4220,
+     "total": 199.79417923988197,
+     "cagr": 0.37249337373938274,
+     "ann_vol": 0.6148452215540673,
+     "mdd": -0.8165984811049699,
+     "longest_underwater_days": 762,
+     "worst_day": -0.34465169021379405,
+     "exposure": 1.0,
+     "recovery_needed": 4.452517547427457
+    }
+   }
+  },
+  "SPXL": {
+   "group": "index3x",
+   "lev": 3,
+   "under": "SPY",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 26.135859214240835,
+     "cagr": 0.21635611946772348,
+     "ann_vol": 0.5125465512526061,
+     "mdd": -0.7633443689847035,
+     "longest_underwater_days": 612,
+     "worst_day": -0.3286242390783466,
+     "exposure": 1.0,
+     "recovery_needed": 3.225549147974273,
+     "vs_hold": {
+      "hold_total": 26.135859214240835,
+      "hold_mdd": -0.7633443689847035,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 15.533506658006363,
+     "cagr": 0.1811169619405517,
+     "ann_vol": 0.3676521924632799,
+     "mdd": -0.5156207401681692,
+     "longest_underwater_days": 554,
+     "worst_day": -0.17330035713486294,
+     "exposure": 0.85778196373911,
+     "recovery_needed": 1.0644979728223394,
+     "vs_hold": {
+      "hold_total": 26.135859214240835,
+      "hold_mdd": -0.7633443689847035,
+      "daily_logdiff_ci": [
+       -0.00011666283095988307,
+       -0.0006992499993456608,
+       0.0004716959945498323
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 5.865428475063382,
+     "cagr": 0.12110041433813934,
+     "ann_vol": 0.3647873129850144,
+     "mdd": -0.5941538232577034,
+     "longest_underwater_days": 761,
+     "worst_day": -0.2346358601744261,
+     "exposure": 0.8212856133741464,
+     "recovery_needed": 1.463987730590297,
+     "vs_hold": {
+      "hold_total": 26.135859214240835,
+      "hold_mdd": -0.7633443689847035,
+      "daily_logdiff_ci": [
+       -0.0003236066917210206,
+       -0.000931918014255547,
+       0.0002551689867027084
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 14.127939870210053,
+     "cagr": 0.17490679579836654,
+     "ann_vol": 0.41196092565561243,
+     "mdd": -0.5851559549715063,
+     "longest_underwater_days": 803,
+     "worst_day": -0.19572202023238996,
+     "exposure": 0.921356251471627,
+     "recovery_needed": 1.410544425029205,
+     "vs_hold": {
+      "hold_total": 26.135859214240835,
+      "hold_mdd": -0.7633443689847035,
+      "daily_logdiff_ci": [
+       -0.00013758246169726167,
+       -0.000636684983810799,
+       0.0003710142996466304
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 17.61382374731954,
+     "cagr": 0.1894521273487655,
+     "ann_vol": 0.5010761814497183,
+     "mdd": -0.7435858720399804,
+     "longest_underwater_days": 612,
+     "worst_day": -0.3286242390783466,
+     "exposure": 0.9974099364257123,
+     "recovery_needed": 2.8999411146172145,
+     "vs_hold": {
+      "hold_total": 26.135859214240835,
+      "hold_mdd": -0.7633443689847035,
+      "daily_logdiff_ci": [
+       -8.875713551833888e-05,
+       -0.0002762885751988281,
+       3.7014838058158536e-05
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2010-01-05",
+     "2026-11-20"
+    ],
+    "realized_lev": 2.9867607327594734,
+    "hold": {
+     "days": 4247,
+     "total": 48.793348602633685,
+     "cagr": 0.2609659558492956,
+     "ann_vol": 0.5108660884268673,
+     "mdd": -0.76856131129923,
+     "longest_underwater_days": 612,
+     "worst_day": -0.33871914617538246,
+     "exposure": 1.0,
+     "recovery_needed": 3.320798763654043
+    }
+   }
+  },
+  "NVDL": {
+   "group": "single2x",
+   "lev": 2,
+   "under": "NVDA",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 1087.9254911682413,
+     "cagr": 0.5142700363096699,
+     "ann_vol": 0.9107381406949986,
+     "mdd": -0.9248083339146028,
+     "longest_underwater_days": 1325,
+     "worst_day": -0.3753352837056067,
+     "exposure": 1.0,
+     "recovery_needed": 12.299346218293305,
+     "vs_hold": {
+      "hold_total": 1087.9254911682413,
+      "hold_mdd": -0.9248083339146028,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 3047.488744136117,
+     "cagr": 0.6096507272483811,
+     "ann_vol": 0.7595757978504064,
+     "mdd": -0.8340140097238383,
+     "longest_underwater_days": 1611,
+     "worst_day": -0.36926000836467615,
+     "exposure": 0.7779609135860608,
+     "recovery_needed": 5.024604837650665,
+     "vs_hold": {
+      "hold_total": 1087.9254911682413,
+      "hold_mdd": -0.9248083339146028,
+      "daily_logdiff_ci": [
+       0.0002423957033158291,
+       -0.0007130560595400406,
+       0.0011166194782587812
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 1115.2296448398668,
+     "cagr": 0.5164968429177037,
+     "ann_vol": 0.7632832521003612,
+     "mdd": -0.8352314691518604,
+     "longest_underwater_days": 1605,
+     "worst_day": -0.36926000836467615,
+     "exposure": 0.7713680244878738,
+     "recovery_needed": 5.069120085325389,
+     "vs_hold": {
+      "hold_total": 1087.9254911682413,
+      "hold_mdd": -0.9248083339146028,
+      "daily_logdiff_ci": [
+       5.8312210084584694e-06,
+       -0.0009142488132764089,
+       0.0008808985355769352
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 427.0500151509725,
+     "cagr": 0.4326574535974357,
+     "ann_vol": 0.8629962793533233,
+     "mdd": -0.930673905044185,
+     "longest_underwater_days": 1325,
+     "worst_day": -0.3753352837056067,
+     "exposure": 0.9526724746880151,
+     "recovery_needed": 13.424582844848688,
+     "vs_hold": {
+      "hold_total": 1087.9254911682413,
+      "hold_mdd": -0.9248083339146028,
+      "daily_logdiff_ci": [
+       -0.0002198508722655641,
+       -0.0006906965581839472,
+       0.00024365041517412063
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 1686.7183783008363,
+     "cagr": 0.5541576757225006,
+     "ann_vol": 0.826874123830654,
+     "mdd": -0.9136528750058127,
+     "longest_underwater_days": 1336,
+     "worst_day": -0.33958159639583724,
+     "exposure": 0.927007299270073,
+     "recovery_needed": 10.581161504419724,
+     "vs_hold": {
+      "hold_total": 1087.9254911682413,
+      "hold_mdd": -0.9248083339146028,
+      "daily_logdiff_ci": [
+       0.00010317544681935319,
+       -0.0006094488668795399,
+       0.0007184941988744838
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2022-12-14",
+     "2026-11-20"
+    ],
+    "realized_lev": 1.842790314045987,
+    "hold": {
+     "days": 988,
+     "total": 6.916087986699794,
+     "cagr": 0.6950197843064734,
+     "ann_vol": 0.9067303551483796,
+     "mdd": -0.7598605195325067,
+     "longest_underwater_days": 275,
+     "worst_day": -0.33784707854386264,
+     "exposure": 1.0,
+     "recovery_needed": 3.16424653727593
+    }
+   }
+  },
+  "AMDL": {
+   "group": "single2x",
+   "lev": 2,
+   "under": "AMD",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 2.1769336823863856,
+     "cagr": 0.07099429267270874,
+     "ann_vol": 1.1484490421190208,
+     "mdd": -0.9954201378908093,
+     "longest_underwater_days": 2589,
+     "worst_day": -0.484799783845323,
+     "exposure": 1.0,
+     "recovery_needed": 217.3471851681377,
+     "vs_hold": {
+      "hold_total": 2.1769336823863856,
+      "hold_mdd": -0.9954201378908093,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 5.862543332426713,
+     "cagr": 0.12107245362207619,
+     "ann_vol": 0.9410425153844644,
+     "mdd": -0.9369158003199357,
+     "longest_underwater_days": 1683,
+     "worst_day": -0.484799783845323,
+     "exposure": 0.6538733223451848,
+     "recovery_needed": 14.851829857104734,
+     "vs_hold": {
+      "hold_total": 2.1769336823863856,
+      "hold_mdd": -0.9954201378908093,
+      "daily_logdiff_ci": [
+       0.00018134251010442924,
+       -0.0010899626979203095,
+       0.0013834392884501546
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 3.359494204998292,
+     "cagr": 0.09129353382708394,
+     "ann_vol": 0.9391074869316105,
+     "mdd": -0.97997848934735,
+     "longest_underwater_days": 2104,
+     "worst_day": -0.484799783845323,
+     "exposure": 0.6216152578290558,
+     "recovery_needed": 48.94628114475677,
+     "vs_hold": {
+      "hold_total": 2.1769336823863856,
+      "hold_mdd": -0.9954201378908093,
+      "daily_logdiff_ci": [
+       7.450896204903607e-05,
+       -0.0011549789966182956,
+       0.0012624214101286473
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 2.7821809176108747,
+     "cagr": 0.08213369009616511,
+     "ann_vol": 1.1287964539464226,
+     "mdd": -0.9956969573609026,
+     "longest_underwater_days": 2844,
+     "worst_day": -0.484799783845323,
+     "exposure": 0.9785731104308923,
+     "recovery_needed": 231.39369996337143,
+     "vs_hold": {
+      "hold_total": 2.1769336823863856,
+      "hold_mdd": -0.9954201378908093,
+      "daily_logdiff_ci": [
+       4.106058978157159e-05,
+       -0.0003900566302883153,
+       0.000338841508141866
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": -0.5818246255624004,
+     "cagr": -0.05041701416400224,
+     "ann_vol": 1.0452858600274628,
+     "mdd": -0.9922689715952587,
+     "longest_underwater_days": 2613,
+     "worst_day": -0.484799783845323,
+     "exposure": 0.8664939957617142,
+     "recovery_needed": 128.34889741017147,
+     "vs_hold": {
+      "hold_total": 2.1769336823863856,
+      "hold_mdd": -0.9954201378908093,
+      "daily_logdiff_ci": [
+       -0.00047745958539131676,
+       -0.0013336089269306787,
+       0.00034521913903517353
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2024-03-19",
+     "2026-11-20"
+    ],
+    "realized_lev": 2.0036511132339405,
+    "hold": {
+     "days": 673,
+     "total": 0.22265779122749807,
+     "cagr": 0.07817857625309266,
+     "ann_vol": 1.2665438100694086,
+     "mdd": -0.8863190878342635,
+     "longest_underwater_days": 524,
+     "worst_day": -0.34863548514160503,
+     "exposure": 1.0,
+     "recovery_needed": 7.796551513785273
+    }
+   }
+  },
+  "AVL": {
+   "group": "single2x",
+   "lev": 2,
+   "under": "AVGO",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 1666.779365807789,
+     "cagr": 0.5530621009074774,
+     "ann_vol": 0.7728867025735747,
+     "mdd": -0.7790468107140035,
+     "longest_underwater_days": 576,
+     "worst_day": -0.3984764158363822,
+     "exposure": 1.0,
+     "recovery_needed": 3.5258455115831078,
+     "vs_hold": {
+      "hold_total": 1666.779365807789,
+      "hold_mdd": -0.7790468107140035,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 44.28896057444582,
+     "cagr": 0.25389152033457396,
+     "ann_vol": 0.659981368977341,
+     "mdd": -0.8883197787754615,
+     "longest_underwater_days": 989,
+     "worst_day": -0.34815458572015573,
+     "exposure": 0.8396515187190958,
+     "recovery_needed": 7.954136990734034,
+     "vs_hold": {
+      "hold_total": 1666.779365807789,
+      "hold_mdd": -0.7790468107140035,
+      "daily_logdiff_ci": [
+       -0.0008491134901370632,
+       -0.001601092124536011,
+       -0.00013385963282458143
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 37.67826169861646,
+     "cagr": 0.24220691294964114,
+     "ann_vol": 0.6564120117194018,
+     "mdd": -0.8479552956117362,
+     "longest_underwater_days": 2128,
+     "worst_day": -0.34815458572015573,
+     "exposure": 0.8210501530492113,
+     "recovery_needed": 5.5770130174766495,
+     "vs_hold": {
+      "hold_total": 1666.779365807789,
+      "hold_mdd": -0.7790468107140035,
+      "daily_logdiff_ci": [
+       -0.0008862657335701316,
+       -0.0016516541933935455,
+       -0.00020365613317603663
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 410.9838315491211,
+     "cagr": 0.42940907440076836,
+     "ann_vol": 0.7330407133383027,
+     "mdd": -0.7837208134819966,
+     "longest_underwater_days": 576,
+     "worst_day": -0.34815458572015573,
+     "exposure": 0.9696256180833529,
+     "recovery_needed": 3.623653418063687,
+     "vs_hold": {
+      "hold_total": 1666.779365807789,
+      "hold_mdd": -0.7790468107140035,
+      "daily_logdiff_ci": [
+       -0.0003292357416311279,
+       -0.0007496961967048243,
+       8.190415318596139e-05
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 666.3335499965575,
+     "cagr": 0.4709070148893617,
+     "ann_vol": 0.7390133504891083,
+     "mdd": -0.7390817417506814,
+     "longest_underwater_days": 634,
+     "worst_day": -0.34815458572015573,
+     "exposure": 0.9917588886272664,
+     "recovery_needed": 2.8326179498119184,
+     "vs_hold": {
+      "hold_total": 1666.779365807789,
+      "hold_mdd": -0.7790468107140035,
+      "daily_logdiff_ci": [
+       -0.0002156718397920613,
+       -0.0006178702604511875,
+       0.0001861342615999745
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2024-10-11",
+     "2026-11-20"
+    ],
+    "realized_lev": 1.9905541263239903,
+    "hold": {
+     "days": 530,
+     "total": 0.2200173147673703,
+     "cagr": 0.09916928992952889,
+     "ann_vol": 1.0639357540292627,
+     "mdd": -0.7063240641344053,
+     "longest_underwater_days": 143,
+     "worst_day": -0.3452598314714973,
+     "exposure": 1.0,
+     "recovery_needed": 2.4051138614832417
+    }
+   }
+  },
+  "MUU": {
+   "group": "single2x",
+   "lev": 2,
+   "under": "MU",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 13.51061176748417,
+     "cagr": 0.17200586831247855,
+     "ann_vol": 1.0233322259599447,
+     "mdd": -0.9572887133214384,
+     "longest_underwater_days": 1567,
+     "worst_day": -0.3965891606445508,
+     "exposure": 1.0,
+     "recovery_needed": 22.41301510127386,
+     "vs_hold": {
+      "hold_total": 13.51061176748417,
+      "hold_mdd": -0.9572887133214384,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 62.47270648358644,
+     "cagr": 0.27925848623972427,
+     "ann_vol": 0.7709457149982268,
+     "mdd": -0.8535539405111505,
+     "longest_underwater_days": 1950,
+     "worst_day": -0.3494001742436263,
+     "exposure": 0.63974570284907,
+     "recovery_needed": 5.82845276609263,
+     "vs_hold": {
+      "hold_total": 13.51061176748417,
+      "hold_mdd": -0.9572887133214384,
+      "daily_logdiff_ci": [
+       0.0003474758103490893,
+       -0.0009688252953271323,
+       0.0015487835091830221
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 268.03079962095364,
+     "cagr": 0.3937174453375143,
+     "ann_vol": 0.7747995969972811,
+     "mdd": -0.9074208922705957,
+     "longest_underwater_days": 977,
+     "worst_day": -0.3494001742436263,
+     "exposure": 0.641629385448552,
+     "recovery_needed": 9.801573103543618,
+     "vs_hold": {
+      "hold_total": 13.51061176748417,
+      "hold_mdd": -0.9572887133214384,
+      "daily_logdiff_ci": [
+       0.0006875313496558857,
+       -0.0005789492581086705,
+       0.0018783867729535234
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 17.03598425584631,
+     "cagr": 0.1872285077848208,
+     "ann_vol": 0.9629350769722965,
+     "mdd": -0.9572887133214383,
+     "longest_underwater_days": 941,
+     "worst_day": -0.36324907315684735,
+     "exposure": 0.9675064751589357,
+     "recovery_needed": 22.4130151012738,
+     "vs_hold": {
+      "hold_total": 13.51061176748417,
+      "hold_mdd": -0.9572887133214384,
+      "daily_logdiff_ci": [
+       5.1209950515166315e-05,
+       -0.00048629611877250143,
+       0.0006249873500436982
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 3.44954510412113,
+     "cagr": 0.09261826560826703,
+     "ann_vol": 0.928751273298827,
+     "mdd": -0.9535708593946808,
+     "longest_underwater_days": 1967,
+     "worst_day": -0.36324907315684735,
+     "exposure": 0.9208853308217565,
+     "recovery_needed": 20.538197497574046,
+     "vs_hold": {
+      "hold_total": 13.51061176748417,
+      "hold_mdd": -0.9572887133214384,
+      "daily_logdiff_ci": [
+       -0.00027833255489316354,
+       -0.0010667317418903391,
+       0.00037775197273353685
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2024-10-11",
+     "2026-11-20"
+    ],
+    "realized_lev": 1.9928484042341768,
+    "hold": {
+     "days": 530,
+     "total": 6.699770386144518,
+     "cagr": 1.6393384990461883,
+     "ann_vol": 1.4635750263729614,
+     "mdd": -0.842301169423503,
+     "longest_underwater_days": 208,
+     "worst_day": -0.3437337396789425,
+     "exposure": 1.0,
+     "recovery_needed": 5.341201113187183
+    }
+   }
+  },
+  "TSMX": {
+   "group": "single2x",
+   "lev": 2,
+   "under": "TSM",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 140.19309802191415,
+     "cagr": 0.3414093709656829,
+     "ann_vol": 0.6355071971749322,
+     "mdd": -0.8548070310656685,
+     "longest_underwater_days": 838,
+     "worst_day": -0.2808993913667929,
+     "exposure": 1.0,
+     "recovery_needed": 5.8873858516680935,
+     "vs_hold": {
+      "hold_total": 140.19309802191415,
+      "hold_mdd": -0.8548070310656685,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 27.625339849962355,
+     "cagr": 0.22021893341720977,
+     "ann_vol": 0.5503153457072133,
+     "mdd": -0.6235487759287806,
+     "longest_underwater_days": 971,
+     "worst_day": -0.2808993913667929,
+     "exposure": 0.8026842477042618,
+     "recovery_needed": 1.65638663406448,
+     "vs_hold": {
+      "hold_total": 140.19309802191415,
+      "hold_mdd": -0.8548070310656685,
+      "daily_logdiff_ci": [
+       -0.00037575608869981506,
+       -0.0009479085319849187,
+       0.0001303779351625996
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 17.15625617066153,
+     "cagr": 0.1876968017764271,
+     "ann_vol": 0.5563918142648158,
+     "mdd": -0.7405454828190161,
+     "longest_underwater_days": 1648,
+     "worst_day": -0.2808993913667929,
+     "exposure": 0.7845538026842477,
+     "recovery_needed": 2.854240083638415,
+     "vs_hold": {
+      "hold_total": 140.19309802191415,
+      "hold_mdd": -0.8548070310656685,
+      "daily_logdiff_ci": [
+       -0.0004829557921081639,
+       -0.0010642063146000036,
+       2.902768051621181e-05
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 128.69166358186783,
+     "cagr": 0.3346634089373275,
+     "ann_vol": 0.5999988598605307,
+     "mdd": -0.855250281540247,
+     "longest_underwater_days": 835,
+     "worst_day": -0.26675865740554355,
+     "exposure": 0.963974570284907,
+     "recovery_needed": 5.908476304069946,
+     "vs_hold": {
+      "hold_total": 140.19309802191415,
+      "hold_mdd": -0.8548070310656685,
+      "daily_logdiff_ci": [
+       -2.0006740843530902e-05,
+       -0.00038551615209154853,
+       0.00025709725246560926
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 143.64534104102927,
+     "cagr": 0.3433334492654896,
+     "ann_vol": 0.6264094442517149,
+     "mdd": -0.8184430912637287,
+     "longest_underwater_days": 832,
+     "worst_day": -0.2808993913667929,
+     "exposure": 0.9868142218036261,
+     "recovery_needed": 4.507914884432161,
+     "vs_hold": {
+      "hold_total": 140.19309802191415,
+      "hold_mdd": -0.8548070310656685,
+      "daily_logdiff_ci": [
+       5.687868944541872e-06,
+       -0.0001334119616513175,
+       0.0001607407275724662
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2024-10-04",
+     "2026-11-20"
+    ],
+    "realized_lev": 1.9960848072571082,
+    "hold": {
+     "days": 535,
+     "total": 0.7561654118270982,
+     "cagr": 0.30375854987086837,
+     "ann_vol": 0.8475862081461816,
+     "mdd": -0.6380447495422414,
+     "longest_underwater_days": 119,
+     "worst_day": -0.2629710593337826,
+     "exposure": 1.0,
+     "recovery_needed": 1.7627724663071396
+    }
+   }
+  },
+  "TSLL": {
+   "group": "single2x",
+   "lev": 2,
+   "under": "TSLA",
+   "period": [
+    "2010-06-30",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4125,
+     "total": 88.10362776204525,
+     "cagr": 0.3155909635872429,
+     "ann_vol": 1.1447314893677922,
+     "mdd": -0.9623017191405816,
+     "longest_underwater_days": 1266,
+     "worst_day": -0.42147474037606986,
+     "exposure": 1.0,
+     "recovery_needed": 25.526408557703864,
+     "vs_hold": {
+      "hold_total": 88.10362776204525,
+      "hold_mdd": -0.9623017191405816,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4125,
+     "total": 0.12606471177115575,
+     "cagr": 0.0072796310796454655,
+     "ann_vol": 0.9357842647148179,
+     "mdd": -0.9642111313948678,
+     "longest_underwater_days": 1500,
+     "worst_day": -0.42147474037606986,
+     "exposure": 0.6438787878787878,
+     "recovery_needed": 26.941648869464345,
+     "vs_hold": {
+      "hold_total": 88.10362776204525,
+      "hold_mdd": -0.9623017191405816,
+      "daily_logdiff_ci": [
+       -0.001059653588052296,
+       -0.002357451573677824,
+       0.0002162614118595862
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4125,
+     "total": 61.119234383657904,
+     "cagr": 0.2869148499568075,
+     "ann_vol": 0.9508238720678338,
+     "mdd": -0.8998550760517916,
+     "longest_underwater_days": 1353,
+     "worst_day": -0.42147474037606986,
+     "exposure": 0.6358787878787879,
+     "recovery_needed": 8.985528577735668,
+     "vs_hold": {
+      "hold_total": 88.10362776204525,
+      "hold_mdd": -0.9623017191405816,
+      "daily_logdiff_ci": [
+       -8.745318202740013e-05,
+       -0.0013131692308884972,
+       0.001020194790282
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4125,
+     "total": 77.81704496431409,
+     "cagr": 0.30576868477139696,
+     "ann_vol": 1.084721527003569,
+     "mdd": -0.9623017191405816,
+     "longest_underwater_days": 1266,
+     "worst_day": -0.42147474037606986,
+     "exposure": 0.968,
+     "recovery_needed": 25.526408557703864,
+     "vs_hold": {
+      "hold_total": 88.10362776204525,
+      "hold_mdd": -0.9623017191405816,
+      "daily_logdiff_ci": [
+       -2.9738368277493352e-05,
+       -0.0007960864131915107,
+       0.0007157499905771327
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4125,
+     "total": 7.150517771448216,
+     "cagr": 0.1367504430355453,
+     "ann_vol": 1.037945602199514,
+     "mdd": -0.9514598992979625,
+     "longest_underwater_days": 1474,
+     "worst_day": -0.42147474037606986,
+     "exposure": 0.9115151515151515,
+     "recovery_needed": 19.601522978670378,
+     "vs_hold": {
+      "hold_total": 88.10362776204525,
+      "hold_mdd": -0.9623017191405816,
+      "daily_logdiff_ci": [
+       -0.0005798105681933243,
+       -0.001442038785964217,
+       0.00037463866401901615
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2022-08-10",
+     "2026-11-20"
+    ],
+    "realized_lev": 1.82372396225618,
+    "hold": {
+     "days": 1076,
+     "total": -0.6042255315542604,
+     "cagr": -0.19513698823267867,
+     "ann_vol": 1.0669257731393145,
+     "mdd": -0.8288115947631565,
+     "longest_underwater_days": 581,
+     "worst_day": -0.30769232995630547,
+     "exposure": 1.0,
+     "recovery_needed": 4.841517120370824
+    }
+   }
+  },
+  "AAPU": {
+   "group": "single2x",
+   "lev": 2,
+   "under": "AAPL",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": true,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 298.3397421550089,
+     "cagr": 0.4025737105019904,
+     "ann_vol": 0.5611082534794237,
+     "mdd": -0.7171924781689423,
+     "longest_underwater_days": 612,
+     "worst_day": -0.2575117046586772,
+     "exposure": 1.0,
+     "recovery_needed": 2.5359738437133066,
+     "vs_hold": {
+      "hold_total": 298.3397421550089,
+      "hold_mdd": -0.7171924781689423,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 157.6730332528354,
+     "cagr": 0.35073159167491763,
+     "ann_vol": 0.4622715243675633,
+     "mdd": -0.6184933233124013,
+     "longest_underwater_days": 741,
+     "worst_day": -0.2575117046586772,
+     "exposure": 0.7887920885330821,
+     "recovery_needed": 1.621186105266676,
+     "vs_hold": {
+      "hold_total": 298.3397421550089,
+      "hold_mdd": -0.7171924781689423,
+      "daily_logdiff_ci": [
+       -0.0001494545560209374,
+       -0.0007196876641553577,
+       0.0004265367838090093
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 180.05517104112914,
+     "cagr": 0.3613489909312426,
+     "ann_vol": 0.471390773485809,
+     "mdd": -0.6422517009301412,
+     "longest_underwater_days": 1226,
+     "worst_day": -0.2575117046586772,
+     "exposure": 0.786672945608665,
+     "recovery_needed": 1.795261368397803,
+     "vs_hold": {
+      "hold_total": 298.3397421550089,
+      "hold_mdd": -0.7171924781689423,
+      "daily_logdiff_ci": [
+       -0.00011838412821295204,
+       -0.0006253099673922916,
+       0.00043254382125279463
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 228.59000287640887,
+     "cagr": 0.3806687974443508,
+     "ann_vol": 0.524364770560599,
+     "mdd": -0.7241668700556192,
+     "longest_underwater_days": 613,
+     "worst_day": -0.2473333280197682,
+     "exposure": 0.9696256180833529,
+     "recovery_needed": 2.625380316721348,
+     "vs_hold": {
+      "hold_total": 298.3397421550089,
+      "hold_mdd": -0.7171924781689423,
+      "daily_logdiff_ci": [
+       -6.246387278170483e-05,
+       -0.00035396418260063135,
+       0.00024094097088270876
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 147.66933633020093,
+     "cagr": 0.3455224031959796,
+     "ann_vol": 0.5431313283531954,
+     "mdd": -0.7171924781689423,
+     "longest_underwater_days": 612,
+     "worst_day": -0.2575117046586772,
+     "exposure": 0.9903461266776549,
+     "recovery_needed": 2.5359738437133066,
+     "vs_hold": {
+      "hold_total": 298.3397421550089,
+      "hold_mdd": -0.7171924781689423,
+      "daily_logdiff_ci": [
+       -0.0001647879842603106,
+       -0.00039193395156623056,
+       3.868154853996467e-05
+      ]
+     },
+     "post_registration_days": 0
+    }
+   },
+   "real_etf": {
+    "period": [
+     "2022-08-10",
+     "2026-11-20"
+    ],
+    "realized_lev": 1.8155772412932967,
+    "hold": {
+     "days": 1076,
+     "total": 1.4218709171280541,
+     "cagr": 0.2301793934570009,
+     "ann_vol": 0.4959467468666264,
+     "mdd": -0.5860688256515068,
+     "longest_underwater_days": 232,
+     "worst_day": -0.18497724320779374,
+     "exposure": 1.0,
+     "recovery_needed": 1.4158605632299848
+    }
+   }
+  },
+  "TER": {
+   "group": "watch",
+   "lev": 1,
+   "under": "TER",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": false,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 19.322338366453234,
+     "cagr": 0.19566613440565161,
+     "ann_vol": 0.4338576703650071,
+     "mdd": -0.5911608328109128,
+     "longest_underwater_days": 963,
+     "worst_day": -0.22410551018647118,
+     "exposure": 1.0,
+     "recovery_needed": 1.4459496062359953,
+     "vs_hold": {
+      "hold_total": 19.322338366453234,
+      "hold_mdd": -0.5911608328109128,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 3.408500626444595,
+     "cagr": 0.09201762145248371,
+     "ann_vol": 0.34898202110879595,
+     "mdd": -0.650853335087092,
+     "longest_underwater_days": 2177,
+     "worst_day": -0.22410551018647118,
+     "exposure": 0.6962561808335296,
+     "recovery_needed": 1.8641258831713095,
+     "vs_hold": {
+      "hold_total": 19.322338366453234,
+      "hold_mdd": -0.5911608328109128,
+      "daily_logdiff_ci": [
+       -0.0003598271851976604,
+       -0.0008436258106671241,
+       5.731749613832542e-05
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 1.9023729561103306,
+     "cagr": 0.06526565648264815,
+     "ann_vol": 0.3433562682054425,
+     "mdd": -0.6420592098957567,
+     "longest_underwater_days": 1883,
+     "worst_day": -0.22410551018647118,
+     "exposure": 0.6562279255945374,
+     "recovery_needed": 1.79375815119805,
+     "vs_hold": {
+      "hold_total": 19.322338366453234,
+      "hold_mdd": -0.5911608328109128,
+      "daily_logdiff_ci": [
+       -0.00045825100778227684,
+       -0.0009228283190249347,
+       -1.894906602288171e-05
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 4.597765606445709,
+     "cagr": 0.10760320102753029,
+     "ann_vol": 0.3812712230797567,
+     "mdd": -0.6573572248945713,
+     "longest_underwater_days": 1025,
+     "worst_day": -0.22410551018647118,
+     "exposure": 0.91476336237344,
+     "recovery_needed": 1.9184914221299638,
+     "vs_hold": {
+      "hold_total": 19.322338366453234,
+      "hold_mdd": -0.5911608328109128,
+      "daily_logdiff_ci": [
+       -0.0003035915172846139,
+       -0.0006768248994901443,
+       3.0035449974714727e-06
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 8.608286822992012,
+     "cagr": 0.14368462425312822,
+     "ann_vol": 0.40504051315107065,
+     "mdd": -0.6518232635305352,
+     "longest_underwater_days": 1009,
+     "worst_day": -0.22410551018647118,
+     "exposure": 0.9552625382623028,
+     "recovery_needed": 1.872104581541163,
+     "vs_hold": {
+      "hold_total": 19.322338366453234,
+      "hold_mdd": -0.5911608328109128,
+      "daily_logdiff_ci": [
+       -0.00017638209473243437,
+       -0.00045588324132230955,
+       5.946037549848051e-05
+      ]
+     },
+     "post_registration_days": 0
+    }
+   }
+  },
+  "MP": {
+   "group": "watch",
+   "lev": 1,
+   "under": "MP",
+   "period": [
+    "2020-06-23",
+    "2026-11-20"
+   ],
+   "synthetic": false,
+   "rules": {
+    "HOLD": {
+     "days": 1613,
+     "total": 2.3950000762939525,
+     "cagr": 0.21041259060060757,
+     "ann_vol": 0.7198697300955925,
+     "mdd": -0.8199450725483279,
+     "longest_underwater_days": 821,
+     "worst_day": -0.18272424631638817,
+     "exposure": 1.0,
+     "recovery_needed": 4.5538607810019895,
+     "vs_hold": {
+      "hold_total": 2.3950000762939525,
+      "hold_mdd": -0.8199450725483279,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 1613,
+     "total": 1.6440479203685658,
+     "cagr": 0.1640493712165061,
+     "ann_vol": 0.5974386932556592,
+     "mdd": -0.6910014919316041,
+     "longest_underwater_days": 1099,
+     "worst_day": -0.18272424631638817,
+     "exposure": 0.5257284562926224,
+     "recovery_needed": 2.2362615801971866,
+     "vs_hold": {
+      "hold_total": 2.3950000762939525,
+      "hold_mdd": -0.8199450725483279,
+      "daily_logdiff_ci": [
+       -0.00015498619805582453,
+       -0.0013753317214395407,
+       0.0011205120168991502
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 1613,
+     "total": 5.055328416742755,
+     "cagr": 0.3249328347761631,
+     "ann_vol": 0.595104475695998,
+     "mdd": -0.6013342555004917,
+     "longest_underwater_days": 1077,
+     "worst_day": -0.18272424631638817,
+     "exposure": 0.5201487910725356,
+     "recovery_needed": 1.5083670061881458,
+     "vs_hold": {
+      "hold_total": 2.3950000762939525,
+      "hold_mdd": -0.8199450725483279,
+      "daily_logdiff_ci": [
+       0.00035873207128620145,
+       -0.0008443888682642202,
+       0.001556402315284568
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 1613,
+     "total": 1.6433102145647207,
+     "cagr": 0.16399862512735108,
+     "ann_vol": 0.7052590045031623,
+     "mdd": -0.8199450725483286,
+     "longest_underwater_days": 883,
+     "worst_day": -0.18272424631638817,
+     "exposure": 0.9739615623062616,
+     "recovery_needed": 4.55386078100201,
+     "vs_hold": {
+      "hold_total": 2.3950000762939525,
+      "hold_mdd": -0.8199450725483279,
+      "daily_logdiff_ci": [
+       -0.0001551591956658447,
+       -0.000681513432138139,
+       0.0002740004945331612
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 1613,
+     "total": 0.28738281321456793,
+     "cagr": 0.040254740915605325,
+     "ann_vol": 0.655482262287872,
+     "mdd": -0.8716118002322639,
+     "longest_underwater_days": 1225,
+     "worst_day": -0.18272424631638817,
+     "exposure": 0.7972721636701798,
+     "recovery_needed": 6.788877808155854,
+     "vs_hold": {
+      "hold_total": 2.3950000762939525,
+      "hold_mdd": -0.8199450725483279,
+      "daily_logdiff_ci": [
+       -0.0006011732504229941,
+       -0.001572729363492268,
+       0.0002801771363748616
+      ]
+     },
+     "post_registration_days": 0
+    }
+   }
+  },
+  "ASML": {
+   "group": "watch",
+   "lev": 1,
+   "under": "ASML",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": false,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 38.28922214240457,
+     "cagr": 0.24336263295570149,
+     "ann_vol": 0.3643936204157158,
+     "mdd": -0.5686183796267685,
+     "longest_underwater_days": 592,
+     "worst_day": -0.17349161331660068,
+     "exposure": 1.0,
+     "recovery_needed": 1.318133070052451,
+     "vs_hold": {
+      "hold_total": 38.28922214240457,
+      "hold_mdd": -0.5686183796267685,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 19.369056745871358,
+     "cagr": 0.19582905394400374,
+     "ann_vol": 0.29358195063865294,
+     "mdd": -0.41109498487031937,
+     "longest_underwater_days": 908,
+     "worst_day": -0.12744000414960255,
+     "exposure": 0.777254532611255,
+     "recovery_needed": 0.6980667073785976,
+     "vs_hold": {
+      "hold_total": 38.28922214240457,
+      "hold_mdd": -0.5686183796267685,
+      "daily_logdiff_ci": [
+       -0.00015468173119865308,
+       -0.0005690784170045908,
+       0.00021254595515320438
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 16.83042408573365,
+     "cagr": 0.18642128996121055,
+     "ann_vol": 0.29039019695344986,
+     "mdd": -0.39035162245736943,
+     "longest_underwater_days": 701,
+     "worst_day": -0.12744000414960255,
+     "exposure": 0.747821991994349,
+     "recovery_needed": 0.6402897749532246,
+     "vs_hold": {
+      "hold_total": 38.28922214240457,
+      "hold_mdd": -0.5686183796267685,
+      "daily_logdiff_ci": [
+       -0.00018602402142129214,
+       -0.0006131122758328926,
+       0.00018985515546540973
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 39.627072099885346,
+     "cagr": 0.24583544006191627,
+     "ann_vol": 0.34847991965256014,
+     "mdd": -0.5924878917547982,
+     "longest_underwater_days": 621,
+     "worst_day": -0.16261023671494113,
+     "exposure": 0.9729220626324464,
+     "recovery_needed": 1.453914815699895,
+     "vs_hold": {
+      "hold_total": 38.28922214240457,
+      "hold_mdd": -0.5686183796267685,
+      "daily_logdiff_ci": [
+       7.884249908681391e-06,
+       -0.00016912850698206906,
+       0.0001876643059244616
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 24.823407418165093,
+     "cagr": 0.21278338487307313,
+     "ann_vol": 0.3584087874532551,
+     "mdd": -0.5305190604363841,
+     "longest_underwater_days": 601,
+     "worst_day": -0.17349161331660068,
+     "exposure": 0.9894042853779138,
+     "recovery_needed": 1.130011925360598,
+     "vs_hold": {
+      "hold_total": 38.28922214240457,
+      "hold_mdd": -0.5686183796267685,
+      "daily_logdiff_ci": [
+       -9.881537335544211e-05,
+       -0.00025630027380118403,
+       3.2130887283214606e-05
+      ]
+     },
+     "post_registration_days": 0
+    }
+   }
+  },
+  "INTC": {
+   "group": "control",
+   "lev": 1,
+   "under": "INTC",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": false,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 2.7930589198718287,
+     "cagr": 0.082318114867868,
+     "ann_vol": 0.39573941081480113,
+     "mdd": -0.7079732157296666,
+     "longest_underwater_days": 1255,
+     "worst_day": -0.2857608085782668,
+     "exposure": 1.0,
+     "recovery_needed": 2.4243434296570747,
+     "vs_hold": {
+      "hold_total": 2.7930589198718287,
+      "hold_mdd": -0.7079732157296666,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": 1.6345507860631874,
+     "cagr": 0.05916359768692159,
+     "ann_vol": 0.3108277974529072,
+     "mdd": -0.6576091165262636,
+     "longest_underwater_days": 1560,
+     "worst_day": -0.2857608085782668,
+     "exposure": 0.6392747821991994,
+     "recovery_needed": 1.9206385107409165,
+     "vs_hold": {
+      "hold_total": 2.7930589198718287,
+      "hold_mdd": -0.7079732157296666,
+      "daily_logdiff_ci": [
+       -8.581589560699599e-05,
+       -0.0005603699457451886,
+       0.00037117545886571323
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": 4.111087295826213,
+     "cagr": 0.10164164847675927,
+     "ann_vol": 0.30496392516012594,
+     "mdd": -0.539050949323459,
+     "longest_underwater_days": 1911,
+     "worst_day": -0.18041541384444004,
+     "exposure": 0.622792559453732,
+     "recovery_needed": 1.1694371612920924,
+     "vs_hold": {
+      "hold_total": 2.7930589198718287,
+      "hold_mdd": -0.7079732157296666,
+      "daily_logdiff_ci": [
+       7.022353736737442e-05,
+       -0.0004312586554850251,
+       0.000565236748042389
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 3.352724831025287,
+     "cagr": 0.09119291259197082,
+     "ann_vol": 0.290239029556133,
+     "mdd": -0.6991521585916936,
+     "longest_underwater_days": 1412,
+     "worst_day": -0.2605851455985698,
+     "exposure": 0.8631975512126207,
+     "recovery_needed": 2.323939421731845,
+     "vs_hold": {
+      "hold_total": 2.7930589198718287,
+      "hold_mdd": -0.7079732157296666,
+      "daily_logdiff_ci": [
+       3.240622804370824e-05,
+       -0.0004955647749674719,
+       0.00050013905703462
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 2.7840290729685444,
+     "cagr": 0.08216505872835622,
+     "ann_vol": 0.36246498512033043,
+     "mdd": -0.8025722176047292,
+     "longest_underwater_days": 1574,
+     "worst_day": -0.2605851455985698,
+     "exposure": 0.9580880621615258,
+     "recovery_needed": 4.065143253232196,
+     "vs_hold": {
+      "hold_total": 2.7930589198718287,
+      "hold_mdd": -0.7079732157296666,
+      "daily_logdiff_ci": [
+       -5.612107697622513e-07,
+       -0.00029125457881937103,
+       0.00032638492229140697
+      ]
+     },
+     "post_registration_days": 0
+    }
+   }
+  },
+  "QCOM": {
+   "group": "control",
+   "lev": 1,
+   "under": "QCOM",
+   "period": [
+    "2010-01-05",
+    "2026-11-20"
+   ],
+   "synthetic": false,
+   "rules": {
+    "HOLD": {
+     "days": 4247,
+     "total": 3.855036375526778,
+     "cagr": 0.09828719147118914,
+     "ann_vol": 0.354549021676435,
+     "mdd": -0.4507923067626176,
+     "longest_underwater_days": 1037,
+     "worst_day": -0.1525058958509251,
+     "exposure": 1.0,
+     "recovery_needed": 0.8208047926374786,
+     "vs_hold": {
+      "hold_total": 3.855036375526778,
+      "hold_mdd": -0.4507923067626176,
+      "daily_logdiff_ci": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "TREND200": {
+     "days": 4247,
+     "total": -0.30572206200006424,
+     "cagr": -0.02141799922811638,
+     "ann_vol": 0.26619309344973446,
+     "mdd": -0.6401644909452162,
+     "longest_underwater_days": 2348,
+     "worst_day": -0.14237276247279274,
+     "exposure": 0.5907699552625383,
+     "recovery_needed": 1.7790475782303998,
+     "vs_hold": {
+      "hold_total": 3.855036375526778,
+      "hold_mdd": -0.4507923067626176,
+      "daily_logdiff_ci": [
+       -0.0004579466695825244,
+       -0.0008774126342096718,
+       -8.747587653570596e-05
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "MOM126": {
+     "days": 4247,
+     "total": -0.2811683292639777,
+     "cagr": -0.019397871792277366,
+     "ann_vol": 0.2658356363028258,
+     "mdd": -0.545035822827936,
+     "longest_underwater_days": 1888,
+     "worst_day": -0.14237276247279274,
+     "exposure": 0.593360018836826,
+     "recovery_needed": 1.1979752476683618,
+     "vs_hold": {
+      "hold_total": 3.855036375526778,
+      "hold_mdd": -0.4507923067626176,
+      "daily_logdiff_ci": [
+       -0.0004497632819815051,
+       -0.000872463143922949,
+       -6.69074133081701e-05
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "VOL_GATE": {
+     "days": 4247,
+     "total": 2.5961020196180034,
+     "cagr": 0.07889914475994231,
+     "ann_vol": 0.3072138687222204,
+     "mdd": -0.43945657554200424,
+     "longest_underwater_days": 1330,
+     "worst_day": -0.1525058958509251,
+     "exposure": 0.9018130445020014,
+     "recovery_needed": 0.7839831070481764,
+     "vs_hold": {
+      "hold_total": 3.855036375526778,
+      "hold_mdd": -0.4507923067626176,
+      "daily_logdiff_ci": [
+       -7.067720922708745e-05,
+       -0.0003708449967898385,
+       0.00022984881575808104
+      ]
+     },
+     "post_registration_days": 0
+    },
+    "CRASH_GATE": {
+     "days": 4247,
+     "total": 2.2081493858139973,
+     "cagr": 0.07161583606750321,
+     "ann_vol": 0.3469088007683825,
+     "mdd": -0.5184552298461405,
+     "longest_underwater_days": 1037,
+     "worst_day": -0.1525058958509251,
+     "exposure": 0.9861078408288203,
+     "recovery_needed": 1.0766501101870292,
+     "vs_hold": {
+      "hold_total": 3.855036375526778,
+      "hold_mdd": -0.4507923067626176,
+      "daily_logdiff_ci": [
+       -9.755647245806455e-05,
+       -0.00021223706685041867,
+       8.557861120337717e-06
+      ]
+     },
+     "post_registration_days": 0
+    }
+   }
+  }
+ },
+ "pooled": {
+  "TREND200": {
+   "n": 15,
+   "median_dcagr": -0.047533579011697746,
+   "median_dmdd": 0.09869915485654102,
+   "mdd_improved": 11
+  },
+  "MOM126": {
+   "n": 15,
+   "median_dcagr": -0.05694134299449094,
+   "median_dmdd": 0.0895768647627424,
+   "mdd_improved": 12
+  },
+  "VOL_GATE": {
+   "n": 15,
+   "median_dcagr": -0.01938804671124683,
+   "median_dmdd": -0.00027681947009328134,
+   "mdd_improved": 5
+  },
+  "CRASH_GATE": {
+   "n": 15,
+   "median_dcagr": -0.05198151015252339,
+   "median_dmdd": 0.003151166295550567,
+   "mdd_improved": 8
+  }
+ }
+}
