@@ -1,13 +1,70 @@
 {
   "_note": "교차종목 다음날 예측기(xs_predictor.py) 사전등록 설정. 결과를 본 뒤 숫자·종목을 바꾸면 registered_on 을 올리고 history 에 이유를 남긴다. 판정은 등록일 이후 실전 기록(logs/xs_predictions.csv)으로만.",
   "registered_on": "2026-11-24",
-  "universe": ["NVDA", "AMD", "AVGO", "MU", "TSM", "ASML", "AMAT", "LRCX", "KLAC", "MRVL", "TER", "QCOM", "INTC", "TXN", "ADI",
-               "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NFLX", "ORCL", "ADBE", "CRM", "NOW", "PLTR", "CRWD", "MP"],
+  "universe": [
+    "NVDA",
+    "AMD",
+    "AVGO",
+    "MU",
+    "TSM",
+    "ASML",
+    "AMAT",
+    "LRCX",
+    "KLAC",
+    "MRVL",
+    "TER",
+    "QCOM",
+    "INTC",
+    "TXN",
+    "ADI",
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "META",
+    "TSLA",
+    "NFLX",
+    "ORCL",
+    "ADBE",
+    "CRM",
+    "NOW",
+    "PLTR",
+    "CRWD",
+    "MP"
+  ],
   "start": "2010-01-01",
   "min_train_years": 3,
   "retrain_every": 21,
   "top_k": 5,
   "cost_bp_per_side": 10,
-  "lgbm": {"n_estimators": 200, "learning_rate": 0.03, "num_leaves": 15, "min_child_samples": 200, "subsample": 0.8, "subsample_freq": 1, "colsample_bytree": 0.8, "reg_lambda": 1.0, "verbose": -1},
-  "history": [{"date": "2026-11-24", "change": "최초 등록. 피처는 Qlib Alpha158 계열을 일봉 OHLCV 로 축약, 날짜별 순위 정규화."}]
+  "lgbm": {
+    "n_estimators": 200,
+    "learning_rate": 0.03,
+    "num_leaves": 15,
+    "min_child_samples": 200,
+    "subsample": 0.8,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.8,
+    "reg_lambda": 1.0,
+    "verbose": -1
+  },
+  "history": [
+    {
+      "date": "2026-11-24",
+      "change": "최초 등록. 피처는 Qlib Alpha158 계열을 일봉 OHLCV 로 축약, 날짜별 순위 정규화."
+    },
+    {
+      "date": "2026-11-24",
+      "change": "수익률 크기(%) 예측 평가 추가(xs_magnitude.py) — 결과 보기 전 등록"
+    }
+  ],
+  "magnitude": {
+    "horizons": [
+      1,
+      5,
+      20
+    ],
+    "retrain_every": 63,
+    "note": "몇 % 오르나 예측. 비교 기준: (a) 학습 구간 평균 수익률, (b) 움직임 크기는 최근 20일 평균 변동폭"
+  }
 }
