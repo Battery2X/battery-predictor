@@ -246,6 +246,22 @@ def main(argv):
     if cfg is None or "top20_v43" not in cfg:
         print("설정 없음 — 생략")
         return 0
+    if mode == "compare":
+        out_dir = argv[2] if len(argv) > 2 else "reports"
+        panel = xp.load_panel(cfg)
+        if panel is None:
+            return 0
+        df = xm.add_labels(xp.build_features(panel), [int(_cfg(cfg)["horizon"])])
+        res = compare_baselines(df, cfg)
+        if not res:
+            print("평가 불가 — 생략")
+            return 0
+        txt = render_cmp(res, cfg)
+        print(txt)
+        os.makedirs(out_dir, exist_ok=True)
+        open(os.path.join(out_dir, "top20_compare.txt"), "w", encoding="utf-8").write(txt + "\n")
+        json.dump(res, open(os.path.join(out_dir, "top20_compare.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
+        return 0
     if mode == "backtest":
         out_dir = argv[2] if len(argv) > 2 else "reports"
         panel = xp.load_panel(cfg)
@@ -278,3 +294,71 @@ def main(argv):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
+
+
+# ---------------------------------------------------------------- v44: 단순 규칙과 비교
+def _run_offsets(P, cfg):
+    out = []
+    for off in range(int(_cfg(cfg)["rebalance_every"])):
+        R = simulate(P, cfg, off)
+        if R is not None and len(R) >= 10:
+            out.append((summarize(R, int(_cfg(cfg)["horizon"])), R))
+    return out
+
+
+def _agg(runs):
+    S = pd.DataFrame([s for s, _ in runs])
+    return {"cagr_med": float(S["cagr_top"].median()), "cagr_min": float(S["cagr_top"].min()), "cagr_max": float(S["cagr_top"].max()),
+            "mdd_med": float(S["mdd_top"].median()), "excess_med": float(S["excess_mean"].median()),
+            "pos_offsets": int((S["excess_mean"] > 0).sum()), "n": int(len(S)), "cagr_ew": float(S["cagr_ew"].median())}
+
+
+def compare_baselines(df, cfg):
+    """모델(V0) 예측과 같은 날짜·종목 위에서 단순 규칙 점수로 바꿔 같은 시뮬레이션을 돌린다. 점수는 모두 t 종가까지 정보."""
+    t = _cfg(cfg)
+    h = int(t["horizon"])
+    pred = xv.walk_variant(df, cfg, h, _feats(), cfg["variants_v42"][t["model"]])
+    if pred is None:
+        return None
+    base = pred[["date", "ticker", f"fret{h}", "pred_ret"]].merge(df[["date", "ticker", "std60", "ret60"]], on=["date", "ticker"], how="left")
+    res, runs0 = {}, {}
+    for name, col in (("MODEL", "pred_ret"), ("VOL60", "std60"), ("MOM60", "ret60")):
+        P = base.assign(pred_ret=base[col]).dropna(subset=["pred_ret"])
+        runs = _run_offsets(P, cfg)
+        res[name] = _agg(runs)
+        runs0[name] = runs[0][1]
+    rnd = []
+    for sd in range(int(cfg.get("baselines_v44", {}).get("random_seeds", 30))):
+        rng = np.random.default_rng(sd)
+        P = base.assign(pred_ret=rng.random(len(base)))
+        rnd += _run_offsets(P, cfg)
+    res["RANDOM"] = _agg(rnd)
+    # 짝지은 비교: 같은 교체일 기준 모델 − 변동성 규칙
+    m, v = runs0["MODEL"].set_index("date")["top"], runs0["VOL60"].set_index("date")["top"]
+    d = (m - v).dropna()
+    res["model_minus_vol"] = {"mean": float(d.mean()), "ci": xp.block_ci(d.values, block=3), "periods": int(len(d)),
+                              "model_better_share": float((d > 0).mean())}
+    # 모델 선택이 변동성 상위와 얼마나 겹치나
+    over = []
+    for dt, g in base.dropna(subset=["std60"]).groupby("date"):
+        k = n_picks(len(g), t)
+        over.append(len(set(g.nlargest(k, "pred_ret")["ticker"]) & set(g.nlargest(k, "std60")["ticker"])) / k)
+    res["overlap_with_vol"] = float(np.mean(over)) if over else None
+    return res
+
+
+def render_cmp(res, cfg):
+    pc = lambda x, d=1: f"{x * 100:+.{d}f}%"
+    nm = {"MODEL": "모델(V0)", "VOL60": "변동성 상위", "MOM60": "60일 수익률 상위", "RANDOM": "무작위"}
+    L = ["=== '20일 상위 10%' 모델 vs 단순 규칙 (같은 날짜·종목·비용·교체주기, 시작일 20가지 · 백테스트 · 실전 성적 아님) ===",
+         f"29종목 고르게 보유: 연평균 {pc(res['MODEL']['cagr_ew'])}", ""]
+    for k in ("MODEL", "VOL60", "MOM60", "RANDOM"):
+        r = res[k]
+        L.append(f"  {nm[k]:<12} 연평균 {pc(r['cagr_med'])} (범위 {pc(r['cagr_min'])}~{pc(r['cagr_max'])}) · 최대낙폭 {pc(r['mdd_med'])} · "
+                 f"20일 초과 {pc(r['excess_med'], 2)} · 플러스 시작일 {r['pos_offsets']}/{r['n']}")
+    mv = res["model_minus_vol"]
+    ci = mv["ci"]
+    L += ["", f"모델 − 변동성 상위 (같은 교체일 짝 비교, {mv['periods']}구간): 20일 평균 {pc(mv['mean'], 2)}"
+          f" {'' if not ci else f'[{ci[1] * 100:+.2f}, {ci[2] * 100:+.2f}]'} · 모델이 나았던 구간 {mv['model_better_share'] * 100:.0f}%",
+          f"모델이 고른 종목 중 '변동성 상위'와 겹친 비율: {res['overlap_with_vol'] * 100:.0f}%"]
+    return "\n".join(L)
