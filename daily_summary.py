@@ -136,6 +136,12 @@ def run():
         _sec = _ut.status_section()
         if _sec:
             sections.append(_sec)
+        for _f in ('top20_status.txt',):   # v43: 20일 상위10% 전략(표시 전용)
+            _p = os.path.join('reports', _f)
+            if os.path.exists(_p):
+                _t2 = open(_p, encoding='utf-8').read().strip()
+                if _t2:
+                    sections.append(_t2)
         _xs = os.path.join('reports', 'xs_status.txt')   # v40: 교차종목 예측(표시 전용, predict.yml 이 앞 단계에서 작성)
         if os.path.exists(_xs):
             _t = open(_xs, encoding='utf-8').read().strip()

@@ -102,6 +102,7 @@ jobs:
           python universe_tracker.py daily logs reports || true
           python strategy_sim.py live logs reports || true
           python xs_predictor.py daily logs reports || true
+          python xs_top20.py daily logs reports || true
 
       - name: 🧭 쉬운 요약 리포트 (daily_summary.py, 위험판·일정·핫이슈·뉴스)
         continue-on-error: true
