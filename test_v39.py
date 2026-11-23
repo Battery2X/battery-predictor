@@ -55,7 +55,7 @@ ck("백필: 실물 ETF 없으면 합성만(AMDL)", "real_etf" not in res["AMDL"]
 ck("백필: 실물 ETF 있으면 실제 배수 ≈ 2 (NVDL)", abs(res["NVDL"]["real_etf"]["realized_lev"] - 2) < 0.05)
 ck("백필: 1배 종목은 합성 아님", res["TER"]["synthetic"] is False)
 pl = ut.pooled(res)
-ck("백필: 종목 전체 요약에 규칙 4개", set(pl) == {"TREND200", "MOM126", "VOL_GATE", "CRASH_GATE"} and pl["TREND200"]["n"] == len(res))
+ck("백필: 종목 전체 요약에 규칙 4개", set(pl) >= {"TREND200", "MOM126", "VOL_GATE", "CRASH_GATE", "SWITCH_TREND"} and pl["TREND200"]["n"] == len(res))
 ck("백필: 보고서 렌더링(편향 경고 포함)", "편향" in ut.render_backfill(res, cfg_uni))
 
 # ============ 4) 매일 누적
@@ -76,13 +76,13 @@ with tempfile.TemporaryDirectory() as td:
 # ============ 5) 등록일 이후 성적: t 일 수익률엔 t-1 상태
 base = {"ticker": "TER", "under": "TER", "lev": 1, "synthetic": False, "run_at": "x"}
 log = pd.DataFrame([
-    dict(base, price_date="2026-11-20", close=100, close_under=100, **{f"pos_{k}": 1.0 for k in ut.RULES}),   # 등록 전
-    dict(base, price_date="2026-11-23", close=100, close_under=100, **{f"pos_{k}": (0.0 if k == "TREND200" else 1.0) for k in ut.RULES}),
-    dict(base, price_date="2026-11-24", close=50, close_under=50, **{f"pos_{k}": 1.0 for k in ut.RULES}),
-    dict(base, price_date="2026-11-25", close=60, close_under=60, **{f"pos_{k}": 1.0 for k in ut.RULES}),
+    dict(base, price_date="2026-11-21", close=100, close_under=100, **{f"pos_{k}": 1.0 for k in ut.RULES}),   # 등록 전
+    dict(base, price_date="2026-11-24", close=100, close_under=100, **{f"pos_{k}": (0.0 if k == "TREND200" else 1.0) for k in ut.RULES}),
+    dict(base, price_date="2026-11-25", close=50, close_under=50, **{f"pos_{k}": 1.0 for k in ut.RULES}),
+    dict(base, price_date="2026-11-26", close=60, close_under=60, **{f"pos_{k}": 1.0 for k in ut.RULES}),
 ])
 fe = ut.forward_eval(log, cfg_uni)
-ck("등록일 이후만: 11/20 행 제외 → 2거래일", fe["TER"]["days"] == 2)
+ck("등록일 이후만: 등록 전 행 제외 → 2거래일", fe["TER"]["days"] == 2)
 ck("t-1 상태 적용: TREND200 은 11/24 -50% 를 피함(현금)", abs(fe["TER"]["rules"]["TREND200"]["total"] - 0.2) < 1e-12
    and abs(fe["TER"]["rules"]["HOLD"]["total"] - (0.5 * 1.2 - 1)) < 1e-12)
 with tempfile.TemporaryDirectory() as td:
@@ -90,9 +90,22 @@ with tempfile.TemporaryDirectory() as td:
     s = ut.status_section(td, cfg_uni)
     ck("상태 섹션: 표시 전용 문구와 누적 일수", "매매 신호 아님" in s and "누적 2거래일" in s)
 
+
+# ============ 5b) 롱↔인버스 전환
+ru = np.array([0.01, -0.02, 0.03])
+sr = ut.strategy_returns(ru, np.array([1, -1, 0]), 3, 3, 0.0, 0.0)
+ck("전환: 롱 +3배, 인버스 -3배, 현금 0", np.allclose(sr, [0.03, 0.06, 0.0]))
+sr1 = ut.strategy_returns(np.array([0.02]), np.array([-1]), 2, 1, 0.0, 0.0)
+ck("전환: 단일종목 인버스는 -1배", np.allclose(sr1, [-0.02]))
+chop = np.tile([0.05, -0.0476190476], 100)        # 기초자산 제자리 왕복
+inv_only = ut.strategy_returns(chop, -np.ones(200), 3, 3, 0.0, 0.0)
+ck("전환: 횡보장에서 -3배 인버스는 녹는다(제자리 기초자산인데 손실)", np.prod(1 + inv_only) < 0.9)
+sw = ut.positions(c, cfg_sim, cfg_uni)["SWITCH_TREND"]
+ck("전환: 200일선 아래로 내려간 다음 날 인버스(-1)", sw[299] == 1 and sw[300] == -1)
+
 # ============ 6) 사전등록 · 모델 불변
-h = hashlib.sha256(json.dumps([cfg_uni["rules"], cfg_uni["items"], cfg_uni["lev_cost_annual"]], sort_keys=True).encode()).hexdigest()[:6]
-FROZEN = {"2026-11-23": "5fc581"}
+h = hashlib.sha256(json.dumps([cfg_uni["rules"], cfg_uni["items"], cfg_uni["lev_cost_annual"], cfg_uni.get("inverse_lev")], sort_keys=True).encode()).hexdigest()[:6]
+FROZEN = {"2026-11-23": "5fc581", "2026-11-24": "746065"}
 ck(f"사전등록: universe 규칙·종목 해시({h}) 일치 — 바꾸면 registered_on 을 올리고 FROZEN 추가", FROZEN.get(cfg_uni["registered_on"]) == h)
 import common
 ck("모델 불변: 피처 20개·라벨 방식·로그 스키마 그대로", len(common.FEATURE_COLUMNS) == 20 and common.LABEL_MODE == "all" and len(common.LOG_COLUMNS) == 15)

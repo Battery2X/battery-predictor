@@ -30,8 +30,9 @@ import strategy_sim as ss
 HERE = os.path.dirname(os.path.abspath(__file__))
 UNIVERSE_PATH = os.path.join(HERE, "universe.json")
 DAILY_LOG = "universe_daily.csv"
-RULES = ["HOLD", "TREND200", "MOM126", "VOL_GATE", "CRASH_GATE"]
-LOG_COLS = ["price_date", "ticker", "under", "lev", "close", "close_under", "synthetic"] + [f"pos_{r}" for r in RULES] + ["run_at"]
+RULES = ["HOLD", "TREND200", "MOM126", "VOL_GATE", "CRASH_GATE", "SWITCH_TREND", "SWITCH_MOM"]
+SWITCH = ("SWITCH_TREND", "SWITCH_MOM")
+LOG_COLS = ["price_date", "ticker", "under", "lev", "group", "close", "close_under", "synthetic"] + [f"pos_{r}" for r in RULES] + ["run_at"]
 
 
 def load_universe(path=UNIVERSE_PATH):
@@ -69,7 +70,34 @@ def positions(close_under, cfg_sim, cfg_uni):
             "TREND200": trend_pos(c, U["TREND200"]["window"])[1:],
             "MOM126": mom_pos(c, U["MOM126"]["window"])[1:],
             "VOL_GATE": ss.vol_gate(r, R["VOL_GATE"]["lam"], R["VOL_GATE"]["mult"], R["VOL_GATE"]["min_obs"]),
-            "CRASH_GATE": ss.crash_gate(r, R["CRASH_GATE"]["dd_window"], R["CRASH_GATE"]["dd_trigger"], R["CRASH_GATE"]["reentry_ma"])}
+            "CRASH_GATE": ss.crash_gate(r, R["CRASH_GATE"]["dd_window"], R["CRASH_GATE"]["dd_trigger"], R["CRASH_GATE"]["reentry_ma"]),
+            "SWITCH_TREND": 2 * trend_pos(c, U["SWITCH_TREND"]["window"])[1:] - 1,     # +1 롱 / -1 인버스
+            "SWITCH_MOM": 2 * mom_pos(c, U["SWITCH_MOM"]["window"])[1:] - 1}
+
+
+def strategy_returns(ru, pos, lev, inv_lev, cost_long, cost_inv):
+    """기초자산 수익률 ru, 보유 pos(+1 롱/-1 인버스/0 현금) → 상품 수익률. 인버스는 -inv_lev×ru − 비용."""
+    ru, pos = np.asarray(ru, float), np.asarray(pos, float)
+    lr = lev * ru - cost_long / 252.0
+    ir = -inv_lev * ru - cost_inv / 252.0
+    return np.where(pos > 0, pos * lr, np.where(pos < 0, -pos * ir, 0.0))
+
+
+def compare_switch(ru, rv_hold, pos, lev, inv_lev, cost_long, cost_inv):
+    s = strategy_returns(ru, pos, lev, inv_lev, cost_long, cost_inv)
+    m = ss.metrics(s)
+    h = ss.metrics(rv_hold)
+    if m is None:
+        return None
+    m["exposure_inverse"] = float((np.asarray(pos) < 0).mean())
+    m["vs_hold"] = {"hold_total": h["total"], "hold_mdd": h["mdd"],
+                    "daily_logdiff_ci": ss.block_bootstrap_mean(np.log1p(s) - np.log1p(rv_hold))}
+    return m
+
+
+def _costs(cfg_uni, lev, inv_lev):
+    cm = cfg_uni.get("lev_cost_annual", {})
+    return float(cm.get(str(lev), 0.0)), float(cm.get(str(inv_lev), 0.0)) + (0.0095 if inv_lev == 1 else 0.0)
 
 
 def next_day_state(close_under, cfg_sim, cfg_uni):
@@ -118,8 +146,15 @@ def backfill(start="2010-01-01", fetcher=None, cfg_sim=None, cfg_uni=None):
         cost = float(cfg_uni.get("lev_cost_annual", {}).get(str(lev), 0.0))
         rv = ss.synth_leveraged(ru.values, lev, cost) if lev != 1 else ru.values
         pos = positions(cu.values, cfg_sim, cfg_uni)
+        sw = {k: pos.pop(k) for k in SWITCH}
         res = {"group": it.get("group"), "lev": lev, "under": u, "period": [str(ru.index[0].date()), str(ru.index[-1].date())],
                "synthetic": lev != 1, "rules": ss.compare(rv, pos, cfg_uni["registered_on"], ru.index)}
+        inv = int(cfg_uni.get("inverse_lev", {}).get(it.get("group"), 0))
+        if inv:
+            cl, ci_ = _costs(cfg_uni, lev, inv)
+            for k, p in sw.items():
+                res["rules"][k] = compare_switch(ru.values, rv, p, lev, inv, cl, ci_)
+            res["inverse_hold"] = ss.metrics(strategy_returns(ru.values, -np.ones(len(ru)), lev, inv, cl, ci_))
         if lev != 1:   # 실물 ETF 가 있으면 실제 배수와 실물 기준 성적(짧은 기간)도
             ce = _fetch(t, start, fetcher)
             if ce is not None:
@@ -165,6 +200,9 @@ def render_backfill(res, cfg_uni):
             sig = "" if r == "HOLD" or not ci else (" ↑유의" if ci[1] > 0 else (" ↓유의" if ci[2] < 0 else ""))
             cg = "n/a" if m["cagr"] is None else f"{m['cagr'] * 100:5.1f}%"
             L.append(f"  {r:<10} 연 {cg} · MDD {m['mdd'] * 100:6.1f}% · 보유 {m['exposure'] * 100:3.0f}%{sig}")
+        if v.get("inverse_hold"):
+            ih = v["inverse_hold"]
+            L.append(f"  (참고) 인버스만 계속 보유: 총 {ih['total'] * 100:+.1f}% · MDD {ih['mdd'] * 100:.1f}%")
         if v.get("real_etf"):
             e = v["real_etf"]
             lv = "n/a" if e["realized_lev"] is None else f"{e['realized_lev']:.2f}배"
@@ -213,7 +251,7 @@ def daily_rows(fetcher=None, cfg_sim=None, cfg_uni=None, now=None, start=None):
         st = next_day_state(cu.values, cfg_sim, cfg_uni)
         d = cu.index[-1]
         close = float(cu.iloc[-1]) if lev == 1 else (float(ce.loc[d]) if ce is not None and d in ce.index else np.nan)
-        rows.append({"price_date": str(pd.Timestamp(d).date()), "ticker": t, "under": u, "lev": lev, "close": close,
+        rows.append({"price_date": str(pd.Timestamp(d).date()), "ticker": t, "under": u, "lev": lev, "group": it.get("group"), "close": close,
                      "close_under": float(cu.iloc[-1]), "synthetic": bool(lev != 1 and np.isnan(close)),
                      **{f"pos_{k}": v for k, v in st.items()}, "run_at": run_at})
     return rows
@@ -254,8 +292,19 @@ def forward_eval(df, cfg_uni, cost_map=None):
         else:   # 실물 종가가 빠진 날이 있으면 기초자산 합성으로
             ru = (g["close_under"].astype(float) / g["close_under"].astype(float).shift(1) - 1).values[1:]
             r = ss.synth_leveraged(ru, lev, float(cost_map.get(str(lev), 0.0)))
-        pos = {k: g[f"pos_{k}"].astype(float).values[:-1] for k in RULES}
-        out[t] = {"days": len(r), "rules": {k: ss.metrics(r, p) for k, p in pos.items()}}
+        pos = {k: g[f"pos_{k}"].astype(float).values[:-1] for k in RULES if f"pos_{k}" in g}
+        ru = (g["close_under"].astype(float) / g["close_under"].astype(float).shift(1) - 1).values[1:]
+        grp = g["group"].iloc[-1] if "group" in g else None
+        inv = int(cfg_uni.get("inverse_lev", {}).get(grp, 0)) if grp else 0
+        rules = {}
+        for k, p in pos.items():
+            if k in SWITCH:
+                if inv and not np.isnan(p).all():
+                    cl, ci_ = _costs(cfg_uni, lev, inv)
+                    rules[k] = ss.metrics(strategy_returns(ru, np.nan_to_num(p), lev, inv, cl, ci_))
+            else:
+                rules[k] = ss.metrics(r, p)
+        out[t] = {"days": len(r), "rules": rules}
     return out
 
 
@@ -268,10 +317,11 @@ def status_section(log_dir="logs", cfg_uni=None):
             return ""
         last = df.sort_values("price_date").groupby("ticker").tail(1)
         mark = lambda x: "○" if x == 1 else ("✕" if x == 0 else "-")
-        L = ["🧪 규칙 상태 (미검증 · 표시 전용 · 매매 신호 아님) ○보유 ✕현금", "종목  추세 모멘텀 변동성 낙폭"]
+        L = ["🧪 규칙 상태 (미검증 · 표시 전용 · 매매 신호 아님) ○보유 ✕현금", "종목  추세 모멘텀 변동성 낙폭 | 전환(추세)"]
         for _, r in last.iterrows():
             if r["ticker"] in ("SOXL", "TQQQ", "SPXL", "NVDL", "AMDL", "AVL", "MUU", "TSMX"):
-                L.append(f"{r['ticker']:<5} {mark(r['pos_TREND200'])}    {mark(r['pos_MOM126'])}     {mark(r['pos_VOL_GATE'])}     {mark(r['pos_CRASH_GATE'])}")
+                side = {1.0: "롱", -1.0: "인버스"}.get(r.get("pos_SWITCH_TREND"), "-")
+                L.append(f"{r['ticker']:<5} {mark(r['pos_TREND200'])}    {mark(r['pos_MOM126'])}     {mark(r['pos_VOL_GATE'])}     {mark(r['pos_CRASH_GATE'])}  | {side}")
         fe = forward_eval(df, cfg_uni)
         n = max([v["days"] for v in fe.values()], default=0)
         L.append(f"등록일({cfg_uni['registered_on']}) 이후 누적 {n}거래일 — 60일 전에는 판정하지 않음")

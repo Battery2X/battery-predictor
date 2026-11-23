@@ -1,26 +1,133 @@
 {
   "_note": "확장 관찰 종목(v39). 방향 모델과 무관(모델 입력 아님) → 검증 시계 영향 없음. 등록일 이후 구간만 판정. 'control' 은 선택 편향(이미 오른 종목만 고르는 문제)을 줄이려고 일부러 넣은 비교군.",
-  "registered_on": "2026-11-23",
+  "registered_on": "2026-11-24",
   "rules": {
-    "TREND200": {"desc": "기초자산 종가 > 200일 이동평균이면 보유", "window": 200},
-    "MOM126": {"desc": "기초자산 최근 126거래일(약 6개월) 수익률 > 0 이면 보유", "window": 126}
+    "TREND200": {
+      "desc": "기초자산 종가 > 200일 이동평균이면 보유",
+      "window": 200
+    },
+    "MOM126": {
+      "desc": "기초자산 최근 126거래일(약 6개월) 수익률 > 0 이면 보유",
+      "window": 126
+    },
+    "SWITCH_TREND": {
+      "desc": "기초자산 > 200일선이면 롱, 아니면 인버스(지수 3배는 -3배, 단일종목은 -1배)",
+      "window": 200
+    },
+    "SWITCH_MOM": {
+      "desc": "6개월 수익률 > 0 이면 롱, 아니면 인버스",
+      "window": 126
+    }
   },
   "items": [
-    {"ticker": "SOXL", "under": "SMH", "lev": 3, "group": "index3x"},
-    {"ticker": "TQQQ", "under": "QQQ", "lev": 3, "group": "index3x"},
-    {"ticker": "SPXL", "under": "SPY", "lev": 3, "group": "index3x"},
-    {"ticker": "NVDL", "under": "NVDA", "lev": 2, "group": "single2x"},
-    {"ticker": "AMDL", "under": "AMD", "lev": 2, "group": "single2x"},
-    {"ticker": "AVL", "under": "AVGO", "lev": 2, "group": "single2x"},
-    {"ticker": "MUU", "under": "MU", "lev": 2, "group": "single2x"},
-    {"ticker": "TSMX", "under": "TSM", "lev": 2, "group": "single2x"},
-    {"ticker": "TSLL", "under": "TSLA", "lev": 2, "group": "single2x"},
-    {"ticker": "AAPU", "under": "AAPL", "lev": 2, "group": "single2x"},
-    {"ticker": "TER", "under": "TER", "lev": 1, "group": "watch"},
-    {"ticker": "MP", "under": "MP", "lev": 1, "group": "watch"},
-    {"ticker": "ASML", "under": "ASML", "lev": 1, "group": "watch"},
-    {"ticker": "INTC", "under": "INTC", "lev": 1, "group": "control"},
-    {"ticker": "QCOM", "under": "QCOM", "lev": 1, "group": "control"}
+    {
+      "ticker": "SOXL",
+      "under": "SMH",
+      "lev": 3,
+      "group": "index3x"
+    },
+    {
+      "ticker": "TQQQ",
+      "under": "QQQ",
+      "lev": 3,
+      "group": "index3x"
+    },
+    {
+      "ticker": "SPXL",
+      "under": "SPY",
+      "lev": 3,
+      "group": "index3x"
+    },
+    {
+      "ticker": "NVDL",
+      "under": "NVDA",
+      "lev": 2,
+      "group": "single2x"
+    },
+    {
+      "ticker": "AMDL",
+      "under": "AMD",
+      "lev": 2,
+      "group": "single2x"
+    },
+    {
+      "ticker": "AVL",
+      "under": "AVGO",
+      "lev": 2,
+      "group": "single2x"
+    },
+    {
+      "ticker": "MUU",
+      "under": "MU",
+      "lev": 2,
+      "group": "single2x"
+    },
+    {
+      "ticker": "TSMX",
+      "under": "TSM",
+      "lev": 2,
+      "group": "single2x"
+    },
+    {
+      "ticker": "TSLL",
+      "under": "TSLA",
+      "lev": 2,
+      "group": "single2x"
+    },
+    {
+      "ticker": "AAPU",
+      "under": "AAPL",
+      "lev": 2,
+      "group": "single2x"
+    },
+    {
+      "ticker": "TER",
+      "under": "TER",
+      "lev": 1,
+      "group": "watch"
+    },
+    {
+      "ticker": "MP",
+      "under": "MP",
+      "lev": 1,
+      "group": "watch"
+    },
+    {
+      "ticker": "ASML",
+      "under": "ASML",
+      "lev": 1,
+      "group": "watch"
+    },
+    {
+      "ticker": "INTC",
+      "under": "INTC",
+      "lev": 1,
+      "group": "control"
+    },
+    {
+      "ticker": "QCOM",
+      "under": "QCOM",
+      "lev": 1,
+      "group": "control"
+    }
   ],
-  "lev_cost_annual": {"1": 0.0, "2": 0.055, "3": 0.0889}
+  "lev_cost_annual": {
+    "1": 0.0,
+    "2": 0.055,
+    "3": 0.0889
+  },
+  "inverse_lev": {
+    "index3x": 3,
+    "single2x": 1
+  },
+  "history": [
+    {
+      "date": "2026-11-23",
+      "change": "최초 등록(HOLD/TREND200/MOM126/VOL/CRASH)"
+    },
+    {
+      "date": "2026-11-24",
+      "change": "롱↔인버스 전환 규칙 2개 추가(결과 보기 전 등록). 등록일을 11/24로 올림 → 판정은 11/24 이후만"
+    }
+  ]
 }
