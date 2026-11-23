@@ -131,6 +131,13 @@ def run():
             sections = _rl.restyle(sections, summaries, risk, now_kst, headlines=headlines, stale=stale)
         except Exception as e:
             print(f"⚠️ 리포트 재배치 단계 실패(기존 형식으로 전송): {e}")
+    try:      # v39: 확장 종목 규칙 상태(표시 전용, 실패하면 조용히 생략)
+        import universe_tracker as _ut
+        _sec = _ut.status_section()
+        if _sec:
+            sections.append(_sec)
+    except Exception as e:
+        print(f"⚠️ 규칙 상태 섹션 생략(무시): {e}")
     messages = chunk_sections(sections)
     for m in messages:
         print(m + "\n" + "=" * 40)
