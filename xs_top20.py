@@ -292,9 +292,6 @@ def main(argv):
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main(sys.argv))
-
 
 # ---------------------------------------------------------------- v44: 단순 규칙과 비교
 def _run_offsets(P, cfg):
@@ -362,3 +359,7 @@ def render_cmp(res, cfg):
           f" {'' if not ci else f'[{ci[1] * 100:+.2f}, {ci[2] * 100:+.2f}]'} · 모델이 나았던 구간 {mv['model_better_share'] * 100:.0f}%",
           f"모델이 고른 종목 중 '변동성 상위'와 겹친 비율: {res['overlap_with_vol'] * 100:.0f}%"]
     return "\n".join(L)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

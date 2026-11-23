@@ -46,6 +46,10 @@ p2 = p.copy(); p2.loc[p2["date"] > cut, ["Close", "High", "Low"]] *= 2
 a = xp.build_features(p).set_index(["date", "ticker"]).loc[lambda x: x.index.get_level_values(0) <= cut, ["std60", "ret60"]].sort_index()
 b = xp.build_features(p2).set_index(["date", "ticker"]).loc[lambda x: x.index.get_level_values(0) <= cut, ["std60", "ret60"]].sort_index()
 ck("단순 규칙 점수는 미래 가격과 무관(t 종가까지)", np.allclose(a.values, b.values, equal_nan=True))
+import ast, inspect
+tree = ast.parse(open(xt.__file__, encoding="utf-8").read())
+last = tree.body[-1]
+ck("스크립트 실행 시 모든 함수가 먼저 정의됨(__main__ 블록이 파일 맨 끝)", isinstance(last, ast.If) and "__main__" in ast.dump(last.test))
 import common
 ck("모델 불변: 피처 20개·라벨 방식·로그 스키마 그대로", len(common.FEATURE_COLUMNS) == 20 and common.LABEL_MODE == "all" and len(common.LOG_COLUMNS) == 15)
 print(f"\n{'ALL PASS' if not fails else 'FAILED: ' + str(fails)} ({len(fails)} fail)")
