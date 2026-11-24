@@ -1,154 +1,154 @@
 {
 "holdings": {
 "SOXX": {
-"asof": "2026-11-16",
+"asof": "2026-11-24",
 "source": "alphavantage",
 "holdings": [
 {
 "symbol": "AMD",
-"weight": 0.0898
-},
-{
-"symbol": "NVDA",
-"weight": 0.0818
+"weight": 0.1027
 },
 {
 "symbol": "AVGO",
-"weight": 0.0783
+"weight": 0.0863
 },
 {
 "symbol": "MU",
-"weight": 0.0779
+"weight": 0.0719
+},
+{
+"symbol": "NVDA",
+"weight": 0.0678
 },
 {
 "symbol": "INTC",
-"weight": 0.0591
+"weight": 0.0594
 },
 {
 "symbol": "TXN",
-"weight": 0.0523
+"weight": 0.0541
 },
 {
 "symbol": "ADI",
-"weight": 0.0506
+"weight": 0.0507
 },
 {
 "symbol": "QCOM",
-"weight": 0.0421
+"weight": 0.0474
 },
 {
 "symbol": "NXPI",
-"weight": 0.0392
-},
-{
-"symbol": "KLAC",
-"weight": 0.0389
+"weight": 0.0431
 },
 {
 "symbol": "MPWR",
-"weight": 0.038
+"weight": 0.0413
+},
+{
+"symbol": "KLAC",
+"weight": 0.0393
 },
 {
 "symbol": "AMAT",
-"weight": 0.0364
-},
-{
-"symbol": "MRVL",
-"weight": 0.0355
+"weight": 0.0366
 },
 {
 "symbol": "LRCX",
-"weight": 0.0334
+"weight": 0.0335
 },
 {
 "symbol": "TSM",
-"weight": 0.0326
+"weight": 0.033
+},
+{
+"symbol": "MRVL",
+"weight": 0.0329
 },
 {
 "symbol": "SKHY",
-"weight": 0.0306
+"weight": 0.0272
 },
 {
 "symbol": "TER",
-"weight": 0.0252
+"weight": 0.0239
 },
 {
 "symbol": "MCHP",
-"weight": 0.0251
+"weight": 0.0207
 },
 {
 "symbol": "ALAB",
-"weight": 0.0201
+"weight": 0.0191
 },
 {
 "symbol": "ON",
-"weight": 0.017
-},
-{
-"symbol": "CRDO",
-"weight": 0.0154
+"weight": 0.0174
 },
 {
 "symbol": "ASML",
-"weight": 0.0153
+"weight": 0.0152
 },
 {
 "symbol": "ENTG",
-"weight": 0.014
+"weight": 0.0141
+},
+{
+"symbol": "CRDO",
+"weight": 0.0135
 },
 {
 "symbol": "MTSI",
-"weight": 0.0101
+"weight": 0.0104
 },
 {
 "symbol": "ASX",
-"weight": 0.0096
+"weight": 0.0088
 },
 {
 "symbol": "CBRS",
-"weight": 0.0057
+"weight": 0.0065
 },
 {
 "symbol": "UMC",
-"weight": 0.0055
+"weight": 0.0053
 },
 {
 "symbol": "STM",
-"weight": 0.0046
+"weight": 0.0047
 },
 {
 "symbol": "ARM",
-"weight": 0.0042
+"weight": 0.004
 }
 ]
 },
 "QQQ": {
-"asof": "2026-11-16",
+"asof": "2026-11-24",
 "source": "alphavantage",
 "holdings": [
 {
-"symbol": "NVDA",
-"weight": 0.0814
-},
-{
 "symbol": "AAPL",
-"weight": 0.0791
+"weight": 0.0874
 },
 {
 "symbol": "MSFT",
-"weight": 0.0632
+"weight": 0.0641
+},
+{
+"symbol": "NVDA",
+"weight": 0.0618
 },
 {
 "symbol": "AMZN",
-"weight": 0.0442
-},
-{
-"symbol": "MU",
-"weight": 0.0436
+"weight": 0.049
 },
 {
 "symbol": "AMD",
-"weight": 0.0356
+"weight": 0.0406
+},
+{
+"symbol": "MU",
+"weight": 0.0373
 },
 {
 "symbol": "TSLA",
@@ -156,258 +156,270 @@
 },
 {
 "symbol": "META",
-"weight": 0.0302
+"weight": 0.0311
 },
 {
 "symbol": "WMT",
-"weight": 0.0274
+"weight": 0.029
 },
 {
 "symbol": "SPCX",
-"weight": 0.0273
-},
-{
-"symbol": "GOOGL",
-"weight": 0.0268
+"weight": 0.0289
 },
 {
 "symbol": "AVGO",
-"weight": 0.0258
+"weight": 0.0286
+},
+{
+"symbol": "GOOGL",
+"weight": 0.0281
 },
 {
 "symbol": "GOOG",
-"weight": 0.0251
+"weight": 0.0262
 },
 {
 "symbol": "COST",
-"weight": 0.0204
+"weight": 0.0228
 },
 {
 "symbol": "CSCO",
-"weight": 0.0183
+"weight": 0.018
 },
 {
 "symbol": "PLTR",
-"weight": 0.0182
+"weight": 0.0169
 },
 {
 "symbol": "INTC",
-"weight": 0.0144
+"weight": 0.0135
 },
 {
 "symbol": "AMAT",
-"weight": 0.0137
+"weight": 0.0131
 },
 {
-"symbol": "LRCX",
+"symbol": "PANW",
 "weight": 0.013
 },
 {
 "symbol": "TXN",
-"weight": 0.0129
+"weight": 0.0125
 },
 {
-"symbol": "PANW",
-"weight": 0.0129
+"symbol": "LRCX",
+"weight": 0.0124
 },
 {
 "symbol": "NFLX",
-"weight": 0.0119
+"weight": 0.0117
 },
 {
 "symbol": "CRWD",
-"weight": 0.0113
+"weight": 0.0114
 },
 {
 "symbol": "AMGN",
-"weight": 0.0112
+"weight": 0.0113
 },
 {
 "symbol": "LIN",
-"weight": 0.0106
+"weight": 0.0111
 },
 {
 "symbol": "GILD",
-"weight": 0.0094
-},
-{
-"symbol": "KLAC",
-"weight": 0.0092
-},
-{
-"symbol": "ADI",
-"weight": 0.0092
+"weight": 0.0098
 },
 {
 "symbol": "PEP",
-"weight": 0.0085
+"weight": 0.0091
 },
 {
-"symbol": "QCOM",
-"weight": 0.0078
+"symbol": "KLAC",
+"weight": 0.0089
 },
 {
-"symbol": "SHOP",
-"weight": 0.0078
+"symbol": "ADI",
+"weight": 0.0087
 },
 {
 "symbol": "TMUS",
-"weight": 0.0075
+"weight": 0.0082
 },
 {
-"symbol": "SNDK",
-"weight": 0.0074
+"symbol": "QCOM",
+"weight": 0.0079
+},
+{
+"symbol": "SHOP",
+"weight": 0.0079
 },
 {
 "symbol": "ISRG",
 "weight": 0.007
 },
 {
-"symbol": "MRVL",
-"weight": 0.0068
+"symbol": "VRTX",
+"weight": 0.0064
 },
 {
 "symbol": "ASML",
-"weight": 0.0066
-},
-{
-"symbol": "STX",
 "weight": 0.0062
 },
 {
-"symbol": "VRTX",
-"weight": 0.0061
-},
-{
-"symbol": "WDC",
-"weight": 0.0056
+"symbol": "MRVL",
+"weight": 0.006
 },
 {
 "symbol": "SBUX",
-"weight": 0.0054
-},
-{
-"symbol": "BKNG",
-"weight": 0.0053
+"weight": 0.0058
 },
 {
 "symbol": "ADP",
+"weight": 0.0057
+},
+{
+"symbol": "APP",
+"weight": 0.0056
+},
+{
+"symbol": "STX",
+"weight": 0.0055
+},
+{
+"symbol": "BKNG",
+"weight": 0.0054
+},
+{
+"symbol": "SNDK",
 "weight": 0.0053
 },
 {
 "symbol": "MAR",
+"weight": 0.0052
+},
+{
+"symbol": "WDC",
 "weight": 0.0049
 },
 {
 "symbol": "REGN",
+"weight": 0.0045
+},
+{
+"symbol": "CSX",
+"weight": 0.0045
+},
+{
+"symbol": "FTNT",
+"weight": 0.0045
+},
+{
+"symbol": "CEG",
 "weight": 0.0044
 },
 {
 "symbol": "ADBE",
-"weight": 0.0044
+"weight": 0.0042
 },
 {
-"symbol": "INTU",
-"weight": 0.0043
+"symbol": "CTAS",
+"weight": 0.0042
 },
 {
-"symbol": "CEG",
+"symbol": "CMCSA",
 "weight": 0.0042
 },
 {
 "symbol": "MNST",
-"weight": 0.0042
-},
-{
-"symbol": "CSX",
-"weight": 0.0042
-},
-{
-"symbol": "FTNT",
-"weight": 0.0042
-},
-{
-"symbol": "MRNA",
 "weight": 0.0041
 },
 {
-"symbol": "ARM",
+"symbol": "INTU",
+"weight": 0.004
+},
+{
+"symbol": "MDLZ",
 "weight": 0.004
 },
 {
 "symbol": "SNPS",
-"weight": 0.004
+"weight": 0.0039
 },
 {
 "symbol": "CDNS",
-"weight": 0.004
+"weight": 0.0039
 },
 {
-"symbol": "CTAS",
-"weight": 0.004
-},
-{
-"symbol": "MELI",
-"weight": 0.0038
-},
-{
-"symbol": "CMCSA",
-"weight": 0.0038
-},
-{
-"symbol": "MDLZ",
+"symbol": "ARM",
 "weight": 0.0037
 },
 {
-"symbol": "APP",
-"weight": 0.0034
+"symbol": "MRNA",
+"weight": 0.0037
+},
+{
+"symbol": "ORLY",
+"weight": 0.0035
+},
+{
+"symbol": "ABNB",
+"weight": 0.0035
 },
 {
 "symbol": "ROST",
 "weight": 0.0034
 },
 {
-"symbol": "DASH",
+"symbol": "MELI",
 "weight": 0.0034
 },
 {
-"symbol": "DDOG",
+"symbol": "HON",
 "weight": 0.0033
-},
-{
-"symbol": "ORLY",
-"weight": 0.0033
-},
-{
-"symbol": "ABNB",
-"weight": 0.0032
 },
 {
 "symbol": "AEP",
 "weight": 0.0032
 },
 {
-"symbol": "HON",
+"symbol": "DASH",
 "weight": 0.0032
+},
+{
+"symbol": "MPWR",
+"weight": 0.003
 },
 {
 "symbol": "NXPI",
 "weight": 0.003
 },
 {
-"symbol": "MPWR",
+"symbol": "FAST",
 "weight": 0.0029
 },
 {
-"symbol": "LITE",
-"weight": 0.0028
+"symbol": "DDOG",
+"weight": 0.0026
 },
 {
-"symbol": "FAST",
-"weight": 0.0027
+"symbol": "IDXX",
+"weight": 0.0026
 },
 {
-"symbol": "BKR",
+"symbol": "PCAR",
+"weight": 0.0026
+},
+{
+"symbol": "ADSK",
+"weight": 0.0025
+},
+{
+"symbol": "XEL",
+"weight": 0.0024
+},
+{
+"symbol": "CCEP",
 "weight": 0.0024
 },
 {
@@ -415,67 +427,43 @@
 "weight": 0.0024
 },
 {
-"symbol": "ADSK",
-"weight": 0.0024
+"symbol": "PYPL",
+"weight": 0.0023
 },
 {
 "symbol": "FANG",
-"weight": 0.0024
+"weight": 0.0023
 },
 {
-"symbol": "PCAR",
-"weight": 0.0024
-},
-{
-"symbol": "IDXX",
-"weight": 0.0024
+"symbol": "LITE",
+"weight": 0.0023
 },
 {
 "symbol": "HONA",
 "weight": 0.0023
 },
 {
-"symbol": "MSTR",
+"symbol": "BKR",
 "weight": 0.0022
 },
 {
-"symbol": "PYPL",
+"symbol": "KDP",
 "weight": 0.0022
 },
 {
-"symbol": "CCEP",
-"weight": 0.0022
-},
-{
-"symbol": "XEL",
+"symbol": "EXC",
 "weight": 0.0022
 },
 {
 "symbol": "ROP",
-"weight": 0.0021
-},
-{
-"symbol": "KDP",
-"weight": 0.0021
-},
-{
-"symbol": "EXC",
-"weight": 0.0021
-},
-{
-"symbol": "TRI",
-"weight": 0.0019
-},
-{
-"symbol": "MCHP",
-"weight": 0.0019
+"weight": 0.0022
 },
 {
 "symbol": "PAYX",
 "weight": 0.0019
 },
 {
-"symbol": "TER",
+"symbol": "TTWO",
 "weight": 0.0019
 },
 {
@@ -483,7 +471,15 @@
 "weight": 0.0018
 },
 {
-"symbol": "WDAY",
+"symbol": "TRI",
+"weight": 0.0018
+},
+{
+"symbol": "GEHC",
+"weight": 0.0018
+},
+{
+"symbol": "TER",
 "weight": 0.0017
 },
 {
@@ -491,20 +487,8 @@
 "weight": 0.0017
 },
 {
-"symbol": "NBIS",
+"symbol": "WDAY",
 "weight": 0.0016
-},
-{
-"symbol": "TTWO",
-"weight": 0.0016
-},
-{
-"symbol": "GEHC",
-"weight": 0.0016
-},
-{
-"symbol": "AXON",
-"weight": 0.0015
 },
 {
 "symbol": "RKLB",
@@ -512,184 +496,188 @@
 },
 {
 "symbol": "DXCM",
-"weight": 0.0014
+"weight": 0.0015
+},
+{
+"symbol": "MCHP",
+"weight": 0.0015
+},
+{
+"symbol": "MSTR",
+"weight": 0.0015
 },
 {
 "symbol": "CPRT",
-"weight": 0.0013
+"weight": 0.0014
 },
 {
-"symbol": "CRWV",
+"symbol": "NBIS",
+"weight": 0.0012
+},
+{
+"symbol": "AXON",
 "weight": 0.0011
 },
 {
-"symbol": "ALNY",
+"symbol": "CRWV",
 "weight": 0.001
+},
+{
+"symbol": "ALNY",
+"weight": 0.0009
 }
 ]
 },
 "SPY": {
-"asof": "2026-11-16",
+"asof": "2026-11-24",
 "source": "alphavantage",
 "holdings": [
 {
 "symbol": "AAPL",
-"weight": 0.079
-},
-{
-"symbol": "NVDA",
-"weight": 0.064
+"weight": 0.0804
 },
 {
 "symbol": "MSFT",
-"weight": 0.0589
+"weight": 0.0601
+},
+{
+"symbol": "NVDA",
+"weight": 0.059
 },
 {
 "symbol": "AMZN",
-"weight": 0.0397
+"weight": 0.0395
 },
 {
 "symbol": "GOOGL",
-"weight": 0.0262
+"weight": 0.026
 },
 {
 "symbol": "AVGO",
-"weight": 0.025
+"weight": 0.0248
 },
 {
 "symbol": "META",
-"weight": 0.0211
+"weight": 0.0216
 },
 {
 "symbol": "GOOG",
-"weight": 0.021
+"weight": 0.0209
 },
 {
 "symbol": "LLY",
-"weight": 0.0175
-},
-{
-"symbol": "TSLA",
-"weight": 0.0168
+"weight": 0.0179
 },
 {
 "symbol": "BRK-B",
+"weight": 0.0173
+},
+{
+"symbol": "TSLA",
 "weight": 0.0167
 },
 {
-"symbol": "MU",
-"weight": 0.0139
-},
-{
 "symbol": "JPM",
-"weight": 0.0139
+"weight": 0.014
 },
 {
 "symbol": "AMD",
-"weight": 0.0137
+"weight": 0.0129
+},
+{
+"symbol": "MU",
+"weight": 0.0127
 },
 {
 "symbol": "V",
-"weight": 0.011
+"weight": 0.0114
 },
 {
 "symbol": "XOM",
-"weight": 0.0104
+"weight": 0.0107
 },
 {
 "symbol": "JNJ",
-"weight": 0.0103
+"weight": 0.0106
 },
 {
 "symbol": "WMT",
-"weight": 0.0085
+"weight": 0.0089
 },
 {
 "symbol": "MA",
-"weight": 0.0081
+"weight": 0.0084
 },
 {
 "symbol": "ABBV",
-"weight": 0.0079
+"weight": 0.0081
 },
 {
 "symbol": "COST",
-"weight": 0.0073
+"weight": 0.0077
 },
 {
 "symbol": "CVX",
-"weight": 0.0064
-},
-{
-"symbol": "PLTR",
-"weight": 0.006
-},
-{
-"symbol": "CSCO",
-"weight": 0.006
+"weight": 0.0067
 },
 {
 "symbol": "PG",
-"weight": 0.0059
+"weight": 0.0063
 },
 {
 "symbol": "KO",
-"weight": 0.0057
+"weight": 0.006
 },
 {
 "symbol": "UNH",
-"weight": 0.0055
+"weight": 0.0058
+},
+{
+"symbol": "CSCO",
+"weight": 0.0058
+},
+{
+"symbol": "PLTR",
+"weight": 0.0058
 },
 {
 "symbol": "MRK",
-"weight": 0.0055
-},
-{
-"symbol": "GE",
-"weight": 0.0054
+"weight": 0.0056
 },
 {
 "symbol": "HD",
+"weight": 0.0054
+},
+{
+"symbol": "GE",
 "weight": 0.0053
 },
 {
 "symbol": "BAC",
-"weight": 0.005
-},
-{
-"symbol": "AMAT",
-"weight": 0.0048
-},
-{
-"symbol": "INTC",
-"weight": 0.0047
+"weight": 0.0051
 },
 {
 "symbol": "PM",
-"weight": 0.0047
+"weight": 0.0048
 },
 {
-"symbol": "LRCX",
-"weight": 0.0045
-},
-{
-"symbol": "TXN",
+"symbol": "AMAT",
 "weight": 0.0043
 },
 {
-"symbol": "CAT",
+"symbol": "INTC",
+"weight": 0.0043
+},
+{
+"symbol": "TXN",
 "weight": 0.0042
 },
 {
+"symbol": "LRCX",
+"weight": 0.0041
+},
+{
 "symbol": "GS",
-"weight": 0.0041
-},
-{
-"symbol": "NFLX",
-"weight": 0.0041
-},
-{
-"symbol": "PANW",
 "weight": 0.0041
 },
 {
@@ -697,23 +685,35 @@
 "weight": 0.0041
 },
 {
+"symbol": "CAT",
+"weight": 0.0041
+},
+{
+"symbol": "NFLX",
+"weight": 0.004
+},
+{
 "symbol": "TMO",
 "weight": 0.004
 },
 {
 "symbol": "WFC",
-"weight": 0.0039
+"weight": 0.004
+},
+{
+"symbol": "PANW",
+"weight": 0.004
 },
 {
 "symbol": "AMGN",
 "weight": 0.0039
 },
 {
-"symbol": "ORCL",
+"symbol": "LIN",
 "weight": 0.0038
 },
 {
-"symbol": "LIN",
+"symbol": "ORCL",
 "weight": 0.0037
 },
 {
@@ -729,11 +729,7 @@
 "weight": 0.0035
 },
 {
-"symbol": "GEV",
-"weight": 0.0033
-},
-{
-"symbol": "KLAC",
+"symbol": "DIS",
 "weight": 0.0032
 },
 {
@@ -741,27 +737,23 @@
 "weight": 0.0032
 },
 {
-"symbol": "GILD",
+"symbol": "GEV",
 "weight": 0.0032
 },
 {
-"symbol": "DIS",
-"weight": 0.0031
+"symbol": "GILD",
+"weight": 0.0032
 },
 {
 "symbol": "ANET",
 "weight": 0.0031
 },
 {
-"symbol": "ADI",
-"weight": 0.003
-},
-{
 "symbol": "PEP",
-"weight": 0.003
+"weight": 0.0031
 },
 {
-"symbol": "APH",
+"symbol": "VZ",
 "weight": 0.003
 },
 {
@@ -769,7 +761,7 @@
 "weight": 0.003
 },
 {
-"symbol": "VZ",
+"symbol": "ADI",
 "weight": 0.0029
 },
 {
@@ -777,32 +769,36 @@
 "weight": 0.0029
 },
 {
-"symbol": "QCOM",
+"symbol": "APH",
 "weight": 0.0029
 },
 {
-"symbol": "NEE",
-"weight": 0.0027
+"symbol": "KLAC",
+"weight": 0.0029
 },
 {
 "symbol": "CRM",
-"weight": 0.0027
+"weight": 0.0028
 },
 {
 "symbol": "WELL",
-"weight": 0.0027
+"weight": 0.0028
+},
+{
+"symbol": "NEE",
+"weight": 0.0028
+},
+{
+"symbol": "UNP",
+"weight": 0.0028
+},
+{
+"symbol": "QCOM",
+"weight": 0.0028
 },
 {
 "symbol": "BLK",
 "weight": 0.0027
-},
-{
-"symbol": "UNP",
-"weight": 0.0027
-},
-{
-"symbol": "PFE",
-"weight": 0.0026
 },
 {
 "symbol": "DE",
@@ -814,10 +810,18 @@
 },
 {
 "symbol": "COP",
-"weight": 0.0025
+"weight": 0.0026
+},
+{
+"symbol": "PFE",
+"weight": 0.0026
 },
 {
 "symbol": "ISRG",
+"weight": 0.0024
+},
+{
+"symbol": "T",
 "weight": 0.0024
 },
 {
@@ -825,16 +829,8 @@
 "weight": 0.0024
 },
 {
-"symbol": "MRVL",
-"weight": 0.0023
-},
-{
 "symbol": "SCHW",
-"weight": 0.0023
-},
-{
-"symbol": "T",
-"weight": 0.0023
+"weight": 0.0024
 },
 {
 "symbol": "TJX",
@@ -849,11 +845,11 @@
 "weight": 0.0022
 },
 {
-"symbol": "SPGI",
+"symbol": "PGR",
 "weight": 0.0022
 },
 {
-"symbol": "SNDK",
+"symbol": "SPGI",
 "weight": 0.0022
 },
 {
@@ -861,27 +857,19 @@
 "weight": 0.0021
 },
 {
-"symbol": "BA",
+"symbol": "CB",
+"weight": 0.0021
+},
+{
+"symbol": "MO",
 "weight": 0.0021
 },
 {
 "symbol": "ETN",
-"weight": 0.0021
-},
-{
-"symbol": "PGR",
-"weight": 0.0021
-},
-{
-"symbol": "CB",
 "weight": 0.002
 },
 {
-"symbol": "LOW",
-"weight": 0.002
-},
-{
-"symbol": "MO",
+"symbol": "MCK",
 "weight": 0.002
 },
 {
@@ -889,24 +877,20 @@
 "weight": 0.002
 },
 {
-"symbol": "SBUX",
-"weight": 0.0019
-},
-{
-"symbol": "STX",
-"weight": 0.0019
-},
-{
-"symbol": "NEM",
-"weight": 0.0019
-},
-{
-"symbol": "PH",
-"weight": 0.0019
+"symbol": "BA",
+"weight": 0.002
 },
 {
 "symbol": "MDT",
-"weight": 0.0019
+"weight": 0.002
+},
+{
+"symbol": "MRVL",
+"weight": 0.002
+},
+{
+"symbol": "LOW",
+"weight": 0.002
 },
 {
 "symbol": "PLD",
@@ -917,15 +901,47 @@
 "weight": 0.0019
 },
 {
+"symbol": "COF",
+"weight": 0.0019
+},
+{
+"symbol": "SBUX",
+"weight": 0.0019
+},
+{
 "symbol": "ADP",
 "weight": 0.0019
 },
 {
-"symbol": "MCK",
-"weight": 0.0019
+"symbol": "MPC",
+"weight": 0.0018
 },
 {
-"symbol": "COF",
+"symbol": "CVS",
+"weight": 0.0018
+},
+{
+"symbol": "STX",
+"weight": 0.0018
+},
+{
+"symbol": "SNDK",
+"weight": 0.0018
+},
+{
+"symbol": "APP",
+"weight": 0.0018
+},
+{
+"symbol": "NEM",
+"weight": 0.0018
+},
+{
+"symbol": "CME",
+"weight": 0.0018
+},
+{
+"symbol": "PH",
 "weight": 0.0018
 },
 {
@@ -933,27 +949,7 @@
 "weight": 0.0018
 },
 {
-"symbol": "APP",
-"weight": 0.0017
-},
-{
-"symbol": "CVS",
-"weight": 0.0017
-},
-{
-"symbol": "CME",
-"weight": 0.0017
-},
-{
-"symbol": "MPC",
-"weight": 0.0017
-},
-{
-"symbol": "DELL",
-"weight": 0.0017
-},
-{
-"symbol": "WDC",
+"symbol": "VLO",
 "weight": 0.0017
 },
 {
@@ -961,11 +957,11 @@
 "weight": 0.0017
 },
 {
-"symbol": "PSX",
-"weight": 0.0016
+"symbol": "SO",
+"weight": 0.0017
 },
 {
-"symbol": "BNY",
+"symbol": "WDC",
 "weight": 0.0016
 },
 {
@@ -973,7 +969,7 @@
 "weight": 0.0016
 },
 {
-"symbol": "VLO",
+"symbol": "PSX",
 "weight": 0.0016
 },
 {
@@ -981,11 +977,43 @@
 "weight": 0.0016
 },
 {
-"symbol": "SO",
+"symbol": "DUK",
 "weight": 0.0016
 },
 {
-"symbol": "GLW",
+"symbol": "MRSH",
+"weight": 0.0016
+},
+{
+"symbol": "ICE",
+"weight": 0.0016
+},
+{
+"symbol": "BNY",
+"weight": 0.0016
+},
+{
+"symbol": "MMM",
+"weight": 0.0015
+},
+{
+"symbol": "DELL",
+"weight": 0.0015
+},
+{
+"symbol": "ELV",
+"weight": 0.0015
+},
+{
+"symbol": "REGN",
+"weight": 0.0015
+},
+{
+"symbol": "INTU",
+"weight": 0.0015
+},
+{
+"symbol": "ADBE",
 "weight": 0.0015
 },
 {
@@ -993,67 +1021,11 @@
 "weight": 0.0015
 },
 {
-"symbol": "MRSH",
+"symbol": "USB",
 "weight": 0.0015
-},
-{
-"symbol": "MMM",
-"weight": 0.0015
-},
-{
-"symbol": "DUK",
-"weight": 0.0015
-},
-{
-"symbol": "ICE",
-"weight": 0.0015
-},
-{
-"symbol": "ELV",
-"weight": 0.0014
 },
 {
 "symbol": "MAR",
-"weight": 0.0014
-},
-{
-"symbol": "CDNS",
-"weight": 0.0014
-},
-{
-"symbol": "GD",
-"weight": 0.0014
-},
-{
-"symbol": "ADBE",
-"weight": 0.0014
-},
-{
-"symbol": "HWM",
-"weight": 0.0014
-},
-{
-"symbol": "PNC",
-"weight": 0.0014
-},
-{
-"symbol": "PWR",
-"weight": 0.0014
-},
-{
-"symbol": "EMR",
-"weight": 0.0014
-},
-{
-"symbol": "WM",
-"weight": 0.0014
-},
-{
-"symbol": "TT",
-"weight": 0.0014
-},
-{
-"symbol": "USB",
 "weight": 0.0014
 },
 {
@@ -1061,11 +1033,39 @@
 "weight": 0.0014
 },
 {
-"symbol": "INTU",
+"symbol": "AMT",
 "weight": 0.0014
 },
 {
-"symbol": "MRNA",
+"symbol": "GD",
+"weight": 0.0014
+},
+{
+"symbol": "PWR",
+"weight": 0.0014
+},
+{
+"symbol": "MSI",
+"weight": 0.0014
+},
+{
+"symbol": "PNC",
+"weight": 0.0014
+},
+{
+"symbol": "EMR",
+"weight": 0.0014
+},
+{
+"symbol": "CMCSA",
+"weight": 0.0014
+},
+{
+"symbol": "TT",
+"weight": 0.0014
+},
+{
+"symbol": "WM",
 "weight": 0.0014
 },
 {
@@ -1073,35 +1073,7 @@
 "weight": 0.0014
 },
 {
-"symbol": "FCX",
-"weight": 0.0014
-},
-{
-"symbol": "REGN",
-"weight": 0.0014
-},
-{
-"symbol": "SNPS",
-"weight": 0.0013
-},
-{
-"symbol": "RCL",
-"weight": 0.0013
-},
-{
-"symbol": "TMUS",
-"weight": 0.0013
-},
-{
 "symbol": "WMB",
-"weight": 0.0013
-},
-{
-"symbol": "UPS",
-"weight": 0.0013
-},
-{
-"symbol": "AMT",
 "weight": 0.0013
 },
 {
@@ -1109,15 +1081,23 @@
 "weight": 0.0013
 },
 {
-"symbol": "HLT",
+"symbol": "TMUS",
 "weight": 0.0013
 },
 {
-"symbol": "CMCSA",
+"symbol": "SNPS",
 "weight": 0.0013
 },
 {
-"symbol": "MSI",
+"symbol": "GLW",
+"weight": 0.0013
+},
+{
+"symbol": "CL",
+"weight": 0.0013
+},
+{
+"symbol": "HWM",
 "weight": 0.0013
 },
 {
@@ -1125,23 +1105,27 @@
 "weight": 0.0013
 },
 {
+"symbol": "HLT",
+"weight": 0.0013
+},
+{
+"symbol": "CDNS",
+"weight": 0.0013
+},
+{
+"symbol": "EOG",
+"weight": 0.0013
+},
+{
 "symbol": "TRV",
 "weight": 0.0013
 },
 {
-"symbol": "SHW",
-"weight": 0.0012
+"symbol": "UPS",
+"weight": 0.0013
 },
 {
-"symbol": "EOG",
-"weight": 0.0012
-},
-{
-"symbol": "ECL",
-"weight": 0.0012
-},
-{
-"symbol": "VRT",
+"symbol": "ABNB",
 "weight": 0.0012
 },
 {
@@ -1149,15 +1133,15 @@
 "weight": 0.0012
 },
 {
-"symbol": "ABNB",
+"symbol": "ECL",
 "weight": 0.0012
 },
 {
-"symbol": "ROST",
+"symbol": "NSC",
 "weight": 0.0012
 },
 {
-"symbol": "SPG",
+"symbol": "MRNA",
 "weight": 0.0012
 },
 {
@@ -1165,15 +1149,7 @@
 "weight": 0.0012
 },
 {
-"symbol": "CL",
-"weight": 0.0012
-},
-{
-"symbol": "MCO",
-"weight": 0.0012
-},
-{
-"symbol": "GM",
+"symbol": "ORLY",
 "weight": 0.0012
 },
 {
@@ -1181,15 +1157,47 @@
 "weight": 0.0012
 },
 {
-"symbol": "AON",
+"symbol": "FCX",
+"weight": 0.0012
+},
+{
+"symbol": "SPG",
+"weight": 0.0012
+},
+{
+"symbol": "SHW",
+"weight": 0.0012
+},
+{
+"symbol": "RCL",
+"weight": 0.0012
+},
+{
+"symbol": "SLB",
+"weight": 0.0012
+},
+{
+"symbol": "MCO",
+"weight": 0.0012
+},
+{
+"symbol": "HCA",
+"weight": 0.0012
+},
+{
+"symbol": "ITW",
+"weight": 0.0012
+},
+{
+"symbol": "HON",
 "weight": 0.0011
 },
 {
-"symbol": "KKR",
+"symbol": "COR",
 "weight": 0.0011
 },
 {
-"symbol": "AEP",
+"symbol": "KMB",
 "weight": 0.0011
 },
 {
@@ -1197,27 +1205,11 @@
 "weight": 0.0011
 },
 {
-"symbol": "ORLY",
+"symbol": "GM",
 "weight": 0.0011
 },
 {
-"symbol": "MPWR",
-"weight": 0.0011
-},
-{
-"symbol": "SLB",
-"weight": 0.0011
-},
-{
-"symbol": "ITW",
-"weight": 0.0011
-},
-{
-"symbol": "APD",
-"weight": 0.0011
-},
-{
-"symbol": "URI",
+"symbol": "ROST",
 "weight": 0.0011
 },
 {
@@ -1225,7 +1217,27 @@
 "weight": 0.0011
 },
 {
-"symbol": "HON",
+"symbol": "AEP",
+"weight": 0.0011
+},
+{
+"symbol": "AON",
+"weight": 0.0011
+},
+{
+"symbol": "ALL",
+"weight": 0.0011
+},
+{
+"symbol": "APD",
+"weight": 0.0011
+},
+{
+"symbol": "VRT",
+"weight": 0.0011
+},
+{
+"symbol": "URI",
 "weight": 0.0011
 },
 {
@@ -1237,78 +1249,6 @@
 "weight": 0.0011
 },
 {
-"symbol": "NSC",
-"weight": 0.0011
-},
-{
-"symbol": "HCA",
-"weight": 0.0011
-},
-{
-"symbol": "ALL",
-"weight": 0.001
-},
-{
-"symbol": "TRGP",
-"weight": 0.001
-},
-{
-"symbol": "KMB",
-"weight": 0.001
-},
-{
-"symbol": "NXPI",
-"weight": 0.001
-},
-{
-"symbol": "DLR",
-"weight": 0.001
-},
-{
-"symbol": "FAST",
-"weight": 0.001
-},
-{
-"symbol": "CAH",
-"weight": 0.001
-},
-{
-"symbol": "COR",
-"weight": 0.001
-},
-{
-"symbol": "TEL",
-"weight": 0.001
-},
-{
-"symbol": "HPE",
-"weight": 0.001
-},
-{
-"symbol": "CRH",
-"weight": 0.001
-},
-{
-"symbol": "HOOD",
-"weight": 0.001
-},
-{
-"symbol": "DASH",
-"weight": 0.001
-},
-{
-"symbol": "GWW",
-"weight": 0.001
-},
-{
-"symbol": "CMI",
-"weight": 0.001
-},
-{
-"symbol": "MNST",
-"weight": 0.001
-},
-{
 "symbol": "TDG",
 "weight": 0.001
 },
@@ -1317,7 +1257,99 @@
 "weight": 0.001
 },
 {
-"symbol": "BE",
+"symbol": "CRH",
+"weight": 0.001
+},
+{
+"symbol": "FAST",
+"weight": 0.001
+},
+{
+"symbol": "NXPI",
+"weight": 0.001
+},
+{
+"symbol": "GWW",
+"weight": 0.001
+},
+{
+"symbol": "DASH",
+"weight": 0.001
+},
+{
+"symbol": "MPWR",
+"weight": 0.001
+},
+{
+"symbol": "KMI",
+"weight": 0.001
+},
+{
+"symbol": "TEL",
+"weight": 0.001
+},
+{
+"symbol": "KKR",
+"weight": 0.001
+},
+{
+"symbol": "MNST",
+"weight": 0.001
+},
+{
+"symbol": "EW",
+"weight": 0.001
+},
+{
+"symbol": "HPE",
+"weight": 0.001
+},
+{
+"symbol": "TRGP",
+"weight": 0.001
+},
+{
+"symbol": "CAH",
+"weight": 0.001
+},
+{
+"symbol": "DLR",
+"weight": 0.001
+},
+{
+"symbol": "PSA",
+"weight": 0.0009
+},
+{
+"symbol": "IDXX",
+"weight": 0.0009
+},
+{
+"symbol": "CMI",
+"weight": 0.0009
+},
+{
+"symbol": "BDX",
+"weight": 0.0009
+},
+{
+"symbol": "OKE",
+"weight": 0.0009
+},
+{
+"symbol": "PCAR",
+"weight": 0.0009
+},
+{
+"symbol": "NUE",
+"weight": 0.0009
+},
+{
+"symbol": "TFC",
+"weight": 0.0009
+},
+{
+"symbol": "AFL",
 "weight": 0.0009
 },
 {
@@ -1329,39 +1361,7 @@
 "weight": 0.0009
 },
 {
-"symbol": "EW",
-"weight": 0.0009
-},
-{
-"symbol": "PSA",
-"weight": 0.0009
-},
-{
-"symbol": "TFC",
-"weight": 0.0009
-},
-{
-"symbol": "KMI",
-"weight": 0.0009
-},
-{
-"symbol": "APO",
-"weight": 0.0009
-},
-{
-"symbol": "AFL",
-"weight": 0.0009
-},
-{
-"symbol": "NUE",
-"weight": 0.0009
-},
-{
-"symbol": "LITE",
-"weight": 0.0009
-},
-{
-"symbol": "BDX",
+"symbol": "ADSK",
 "weight": 0.0009
 },
 {
@@ -1369,11 +1369,27 @@
 "weight": 0.0009
 },
 {
-"symbol": "PCAR",
+"symbol": "HUM",
 "weight": 0.0009
 },
 {
-"symbol": "DVN",
+"symbol": "HOOD",
+"weight": 0.0009
+},
+{
+"symbol": "APO",
+"weight": 0.0009
+},
+{
+"symbol": "FERG",
+"weight": 0.0008
+},
+{
+"symbol": "EBAY",
+"weight": 0.0008
+},
+{
+"symbol": "A",
 "weight": 0.0008
 },
 {
@@ -1381,19 +1397,31 @@
 "weight": 0.0008
 },
 {
-"symbol": "OKE",
+"symbol": "KEYS",
 "weight": 0.0008
 },
 {
-"symbol": "PYPL",
+"symbol": "LHX",
 "weight": 0.0008
 },
 {
-"symbol": "IDXX",
+"symbol": "KDP",
 "weight": 0.0008
 },
 {
-"symbol": "WAB",
+"symbol": "DVN",
+"weight": 0.0008
+},
+{
+"symbol": "MSCI",
+"weight": 0.0008
+},
+{
+"symbol": "MET",
+"weight": 0.0008
+},
+{
+"symbol": "DAL",
 "weight": 0.0008
 },
 {
@@ -1401,7 +1429,39 @@
 "weight": 0.0008
 },
 {
-"symbol": "DAL",
+"symbol": "PYPL",
+"weight": 0.0008
+},
+{
+"symbol": "AME",
+"weight": 0.0008
+},
+{
+"symbol": "XEL",
+"weight": 0.0008
+},
+{
+"symbol": "AZO",
+"weight": 0.0008
+},
+{
+"symbol": "BE",
+"weight": 0.0008
+},
+{
+"symbol": "CVNA",
+"weight": 0.0008
+},
+{
+"symbol": "WAB",
+"weight": 0.0008
+},
+{
+"symbol": "RSG",
+"weight": 0.0008
+},
+{
+"symbol": "LITE",
 "weight": 0.0008
 },
 {
@@ -1413,103 +1473,7 @@
 "weight": 0.0008
 },
 {
-"symbol": "XEL",
-"weight": 0.0008
-},
-{
-"symbol": "AME",
-"weight": 0.0008
-},
-{
-"symbol": "KEYS",
-"weight": 0.0008
-},
-{
-"symbol": "A",
-"weight": 0.0008
-},
-{
-"symbol": "KDP",
-"weight": 0.0008
-},
-{
-"symbol": "MET",
-"weight": 0.0008
-},
-{
-"symbol": "LHX",
-"weight": 0.0008
-},
-{
-"symbol": "HUM",
-"weight": 0.0008
-},
-{
-"symbol": "CVNA",
-"weight": 0.0008
-},
-{
-"symbol": "AZO",
-"weight": 0.0008
-},
-{
-"symbol": "FERG",
-"weight": 0.0008
-},
-{
-"symbol": "ADSK",
-"weight": 0.0008
-},
-{
-"symbol": "EXC",
-"weight": 0.0007
-},
-{
-"symbol": "GRMN",
-"weight": 0.0007
-},
-{
-"symbol": "CARR",
-"weight": 0.0007
-},
-{
-"symbol": "IQV",
-"weight": 0.0007
-},
-{
-"symbol": "VYLR",
-"weight": 0.0007
-},
-{
 "symbol": "WAT",
-"weight": 0.0007
-},
-{
-"symbol": "VMRK",
-"weight": 0.0007
-},
-{
-"symbol": "VTR",
-"weight": 0.0007
-},
-{
-"symbol": "EBAY",
-"weight": 0.0007
-},
-{
-"symbol": "RSG",
-"weight": 0.0007
-},
-{
-"symbol": "STT",
-"weight": 0.0007
-},
-{
-"symbol": "VEEV",
-"weight": 0.0007
-},
-{
-"symbol": "BKR",
 "weight": 0.0007
 },
 {
@@ -1517,7 +1481,23 @@
 "weight": 0.0007
 },
 {
-"symbol": "ED",
+"symbol": "VEEV",
+"weight": 0.0007
+},
+{
+"symbol": "VTR",
+"weight": 0.0007
+},
+{
+"symbol": "AIG",
+"weight": 0.0007
+},
+{
+"symbol": "AMP",
+"weight": 0.0007
+},
+{
+"symbol": "OXY",
 "weight": 0.0007
 },
 {
@@ -1525,11 +1505,19 @@
 "weight": 0.0007
 },
 {
-"symbol": "MSCI",
+"symbol": "ED",
+"weight": 0.0007
+},
+{
+"symbol": "NDAQ",
 "weight": 0.0007
 },
 {
 "symbol": "NKE",
+"weight": 0.0007
+},
+{
+"symbol": "EXC",
 "weight": 0.0007
 },
 {
@@ -1541,15 +1529,15 @@
 "weight": 0.0007
 },
 {
-"symbol": "AMP",
+"symbol": "GRMN",
 "weight": 0.0007
 },
 {
-"symbol": "AIG",
+"symbol": "STT",
 "weight": 0.0007
 },
 {
-"symbol": "YUM",
+"symbol": "CARR",
 "weight": 0.0007
 },
 {
@@ -1557,19 +1545,31 @@
 "weight": 0.0007
 },
 {
-"symbol": "COHR",
+"symbol": "PRU",
 "weight": 0.0007
 },
 {
-"symbol": "NDAQ",
+"symbol": "BKR",
 "weight": 0.0007
 },
 {
-"symbol": "WEC",
-"weight": 0.0006
+"symbol": "IQV",
+"weight": 0.0007
 },
 {
-"symbol": "IBKR",
+"symbol": "VMRK",
+"weight": 0.0007
+},
+{
+"symbol": "VYLR",
+"weight": 0.0007
+},
+{
+"symbol": "YUM",
+"weight": 0.0007
+},
+{
+"symbol": "ACGL",
 "weight": 0.0006
 },
 {
@@ -1577,63 +1577,19 @@
 "weight": 0.0006
 },
 {
-"symbol": "BIIB",
-"weight": 0.0006
-},
-{
-"symbol": "KR",
-"weight": 0.0006
-},
-{
-"symbol": "WDAY",
-"weight": 0.0006
-},
-{
-"symbol": "UAL",
-"weight": 0.0006
-},
-{
-"symbol": "HIG",
-"weight": 0.0006
-},
-{
 "symbol": "VST",
 "weight": 0.0006
 },
 {
-"symbol": "ACGL",
+"symbol": "IBKR",
 "weight": 0.0006
 },
 {
-"symbol": "DHI",
+"symbol": "WEC",
 "weight": 0.0006
 },
 {
-"symbol": "TTWO",
-"weight": 0.0006
-},
-{
-"symbol": "SYY",
-"weight": 0.0006
-},
-{
-"symbol": "PEG",
-"weight": 0.0006
-},
-{
-"symbol": "FIX",
-"weight": 0.0006
-},
-{
-"symbol": "CCI",
-"weight": 0.0006
-},
-{
-"symbol": "FANG",
-"weight": 0.0006
-},
-{
-"symbol": "PRU",
+"symbol": "NDSN",
 "weight": 0.0006
 },
 {
@@ -1641,7 +1597,47 @@
 "weight": 0.0006
 },
 {
-"symbol": "OXY",
+"symbol": "NRG",
+"weight": 0.0006
+},
+{
+"symbol": "CNC",
+"weight": 0.0006
+},
+{
+"symbol": "BIIB",
+"weight": 0.0006
+},
+{
+"symbol": "CIEN",
+"weight": 0.0006
+},
+{
+"symbol": "CCI",
+"weight": 0.0006
+},
+{
+"symbol": "DHI",
+"weight": 0.0006
+},
+{
+"symbol": "PEG",
+"weight": 0.0006
+},
+{
+"symbol": "SYY",
+"weight": 0.0006
+},
+{
+"symbol": "FIX",
+"weight": 0.0006
+},
+{
+"symbol": "COHR",
+"weight": 0.0006
+},
+{
+"symbol": "FANG",
 "weight": 0.0006
 },
 {
@@ -1649,11 +1645,15 @@
 "weight": 0.0006
 },
 {
+"symbol": "TTWO",
+"weight": 0.0006
+},
+{
 "symbol": "TER",
 "weight": 0.0006
 },
 {
-"symbol": "CIEN",
+"symbol": "CBOE",
 "weight": 0.0006
 },
 {
@@ -1665,35 +1665,23 @@
 "weight": 0.0006
 },
 {
-"symbol": "CBOE",
+"symbol": "UAL",
 "weight": 0.0006
 },
 {
-"symbol": "ADM",
-"weight": 0.0005
+"symbol": "KR",
+"weight": 0.0006
 },
 {
-"symbol": "ARES",
-"weight": 0.0005
+"symbol": "HIG",
+"weight": 0.0006
 },
 {
-"symbol": "AWK",
-"weight": 0.0005
+"symbol": "WDAY",
+"weight": 0.0006
 },
 {
-"symbol": "AEE",
-"weight": 0.0005
-},
-{
-"symbol": "IRM",
-"weight": 0.0005
-},
-{
-"symbol": "ILMN",
-"weight": 0.0005
-},
-{
-"symbol": "NTAP",
+"symbol": "HBAN",
 "weight": 0.0005
 },
 {
@@ -1701,11 +1689,7 @@
 "weight": 0.0005
 },
 {
-"symbol": "OKTA",
-"weight": 0.0005
-},
-{
-"symbol": "MLM",
+"symbol": "DGX",
 "weight": 0.0005
 },
 {
@@ -1713,19 +1697,7 @@
 "weight": 0.0005
 },
 {
-"symbol": "LH",
-"weight": 0.0005
-},
-{
-"symbol": "MTD",
-"weight": 0.0005
-},
-{
-"symbol": "HBAN",
-"weight": 0.0005
-},
-{
-"symbol": "NTRS",
+"symbol": "OKTA",
 "weight": 0.0005
 },
 {
@@ -1733,47 +1705,15 @@
 "weight": 0.0005
 },
 {
-"symbol": "TWLO",
-"weight": 0.0005
-},
-{
-"symbol": "WSM",
-"weight": 0.0005
-},
-{
-"symbol": "CPAY",
-"weight": 0.0005
-},
-{
-"symbol": "COIN",
-"weight": 0.0005
-},
-{
-"symbol": "EQT",
-"weight": 0.0005
-},
-{
-"symbol": "RMD",
-"weight": 0.0005
-},
-{
-"symbol": "DXCM",
-"weight": 0.0005
-},
-{
-"symbol": "DG",
-"weight": 0.0005
-},
-{
 "symbol": "FISV",
 "weight": 0.0005
 },
 {
-"symbol": "EXR",
+"symbol": "NTAP",
 "weight": 0.0005
 },
 {
-"symbol": "EXPE",
+"symbol": "NTRS",
 "weight": 0.0005
 },
 {
@@ -1781,23 +1721,103 @@
 "weight": 0.0005
 },
 {
+"symbol": "EXPE",
+"weight": 0.0005
+},
+{
+"symbol": "EXR",
+"weight": 0.0005
+},
+{
+"symbol": "ARES",
+"weight": 0.0005
+},
+{
+"symbol": "ADM",
+"weight": 0.0005
+},
+{
+"symbol": "ILMN",
+"weight": 0.0005
+},
+{
+"symbol": "IRM",
+"weight": 0.0005
+},
+{
+"symbol": "LH",
+"weight": 0.0005
+},
+{
+"symbol": "WST",
+"weight": 0.0005
+},
+{
+"symbol": "MTD",
+"weight": 0.0005
+},
+{
+"symbol": "MLM",
+"weight": 0.0005
+},
+{
+"symbol": "VLTO",
+"weight": 0.0005
+},
+{
+"symbol": "AEE",
+"weight": 0.0005
+},
+{
+"symbol": "AWK",
+"weight": 0.0005
+},
+{
+"symbol": "OTIS",
+"weight": 0.0005
+},
+{
+"symbol": "PCG",
+"weight": 0.0005
+},
+{
+"symbol": "DG",
+"weight": 0.0005
+},
+{
+"symbol": "DTE",
+"weight": 0.0005
+},
+{
+"symbol": "RJF",
+"weight": 0.0005
+},
+{
+"symbol": "DXCM",
+"weight": 0.0005
+},
+{
+"symbol": "EQT",
+"weight": 0.0005
+},
+{
+"symbol": "CPAY",
+"weight": 0.0005
+},
+{
+"symbol": "CINF",
+"weight": 0.0005
+},
+{
+"symbol": "RMD",
+"weight": 0.0005
+},
+{
 "symbol": "STLD",
 "weight": 0.0005
 },
 {
-"symbol": "TDY",
-"weight": 0.0005
-},
-{
-"symbol": "ATO",
-"weight": 0.0005
-},
-{
-"symbol": "CNC",
-"weight": 0.0005
-},
-{
-"symbol": "WTW",
+"symbol": "TWLO",
 "weight": 0.0005
 },
 {
@@ -1805,87 +1825,23 @@
 "weight": 0.0005
 },
 {
-"symbol": "PPL",
-"weight": 0.0004
+"symbol": "ATO",
+"weight": 0.0005
 },
 {
-"symbol": "OTIS",
-"weight": 0.0004
+"symbol": "TDY",
+"weight": 0.0005
 },
 {
-"symbol": "CTSH",
-"weight": 0.0004
+"symbol": "WSM",
+"weight": 0.0005
 },
 {
-"symbol": "CPRT",
-"weight": 0.0004
+"symbol": "WTW",
+"weight": 0.0005
 },
 {
-"symbol": "SW",
-"weight": 0.0004
-},
-{
-"symbol": "DRI",
-"weight": 0.0004
-},
-{
-"symbol": "DGX",
-"weight": 0.0004
-},
-{
-"symbol": "Q",
-"weight": 0.0004
-},
-{
-"symbol": "PHM",
-"weight": 0.0004
-},
-{
-"symbol": "EME",
-"weight": 0.0004
-},
-{
-"symbol": "ON",
-"weight": 0.0004
-},
-{
-"symbol": "PPG",
-"weight": 0.0004
-},
-{
-"symbol": "HPQ",
-"weight": 0.0004
-},
-{
-"symbol": "OMC",
-"weight": 0.0004
-},
-{
-"symbol": "CINF",
-"weight": 0.0004
-},
-{
-"symbol": "RF",
-"weight": 0.0004
-},
-{
-"symbol": "FE",
-"weight": 0.0004
-},
-{
-"symbol": "FLEX",
-"weight": 0.0004
-},
-{
-"symbol": "CNP",
-"weight": 0.0004
-},
-{
-"symbol": "AXON",
-"weight": 0.0004
-},
-{
-"symbol": "CHD",
+"symbol": "CASY",
 "weight": 0.0004
 },
 {
@@ -1893,11 +1849,23 @@
 "weight": 0.0004
 },
 {
-"symbol": "CASY",
+"symbol": "CHD",
 "weight": 0.0004
 },
 {
-"symbol": "TPR",
+"symbol": "EL",
+"weight": 0.0004
+},
+{
+"symbol": "ULTA",
+"weight": 0.0004
+},
+{
+"symbol": "XYL",
+"weight": 0.0004
+},
+{
+"symbol": "HSY",
 "weight": 0.0004
 },
 {
@@ -1905,15 +1873,39 @@
 "weight": 0.0004
 },
 {
+"symbol": "DRI",
+"weight": 0.0004
+},
+{
+"symbol": "AXON",
+"weight": 0.0004
+},
+{
+"symbol": "CTSH",
+"weight": 0.0004
+},
+{
+"symbol": "COIN",
+"weight": 0.0004
+},
+{
+"symbol": "PHM",
+"weight": 0.0004
+},
+{
+"symbol": "LUV",
+"weight": 0.0004
+},
+{
 "symbol": "STE",
 "weight": 0.0004
 },
 {
-"symbol": "ES",
+"symbol": "PPG",
 "weight": 0.0004
 },
 {
-"symbol": "EXPD",
+"symbol": "DOW",
 "weight": 0.0004
 },
 {
@@ -1925,47 +1917,7 @@
 "weight": 0.0004
 },
 {
-"symbol": "DTE",
-"weight": 0.0004
-},
-{
-"symbol": "DOW",
-"weight": 0.0004
-},
-{
-"symbol": "HAL",
-"weight": 0.0004
-},
-{
-"symbol": "LYV",
-"weight": 0.0004
-},
-{
-"symbol": "VRSK",
-"weight": 0.0004
-},
-{
-"symbol": "PCG",
-"weight": 0.0004
-},
-{
-"symbol": "VLTO",
-"weight": 0.0004
-},
-{
-"symbol": "IR",
-"weight": 0.0004
-},
-{
-"symbol": "VRSN",
-"weight": 0.0004
-},
-{
-"symbol": "VTRS",
-"weight": 0.0004
-},
-{
-"symbol": "RJF",
+"symbol": "PPL",
 "weight": 0.0004
 },
 {
@@ -1973,23 +1925,35 @@
 "weight": 0.0004
 },
 {
+"symbol": "EME",
+"weight": 0.0004
+},
+{
+"symbol": "CPRT",
+"weight": 0.0004
+},
+{
+"symbol": "RF",
+"weight": 0.0004
+},
+{
+"symbol": "Q",
+"weight": 0.0004
+},
+{
 "symbol": "TROW",
 "weight": 0.0004
 },
 {
-"symbol": "ULTA",
+"symbol": "OMC",
 "weight": 0.0004
 },
 {
-"symbol": "EL",
+"symbol": "ES",
 "weight": 0.0004
 },
 {
-"symbol": "HSY",
-"weight": 0.0004
-},
-{
-"symbol": "JBL",
+"symbol": "EXPD",
 "weight": 0.0004
 },
 {
@@ -1997,7 +1961,23 @@
 "weight": 0.0004
 },
 {
-"symbol": "WST",
+"symbol": "HPQ",
+"weight": 0.0004
+},
+{
+"symbol": "IR",
+"weight": 0.0004
+},
+{
+"symbol": "LYV",
+"weight": 0.0004
+},
+{
+"symbol": "ON",
+"weight": 0.0004
+},
+{
+"symbol": "VRSN",
 "weight": 0.0004
 },
 {
@@ -2005,191 +1985,43 @@
 "weight": 0.0004
 },
 {
-"symbol": "GPC",
-"weight": 0.0003
+"symbol": "VRSK",
+"weight": 0.0004
 },
 {
-"symbol": "LEN",
-"weight": 0.0003
+"symbol": "VTRS",
+"weight": 0.0004
 },
 {
-"symbol": "LNT",
-"weight": 0.0003
+"symbol": "HAL",
+"weight": 0.0004
+},
+{
+"symbol": "FE",
+"weight": 0.0004
+},
+{
+"symbol": "FLEX",
+"weight": 0.0004
+},
+{
+"symbol": "JBL",
+"weight": 0.0004
+},
+{
+"symbol": "CNP",
+"weight": 0.0004
+},
+{
+"symbol": "TPR",
+"weight": 0.0004
 },
 {
 "symbol": "AMCR",
 "weight": 0.0003
 },
 {
-"symbol": "INCY",
-"weight": 0.0003
-},
-{
-"symbol": "IFF",
-"weight": 0.0003
-},
-{
-"symbol": "GEN",
-"weight": 0.0003
-},
-{
-"symbol": "NI",
-"weight": 0.0003
-},
-{
-"symbol": "TSCO",
-"weight": 0.0003
-},
-{
-"symbol": "WRB",
-"weight": 0.0003
-},
-{
-"symbol": "TSN",
-"weight": 0.0003
-},
-{
-"symbol": "BRO",
-"weight": 0.0003
-},
-{
-"symbol": "XYL",
-"weight": 0.0003
-},
-{
-"symbol": "KHC",
-"weight": 0.0003
-},
-{
-"symbol": "CF",
-"weight": 0.0003
-},
-{
-"symbol": "ZBH",
-"weight": 0.0003
-},
-{
-"symbol": "BR",
-"weight": 0.0003
-},
-{
-"symbol": "BBY",
-"weight": 0.0003
-},
-{
-"symbol": "SMCI",
-"weight": 0.0003
-},
-{
-"symbol": "CDW",
-"weight": 0.0003
-},
-{
-"symbol": "LUV",
-"weight": 0.0003
-},
-{
-"symbol": "SWK",
-"weight": 0.0003
-},
-{
-"symbol": "TPL",
-"weight": 0.0003
-},
-{
-"symbol": "SNA",
-"weight": 0.0003
-},
-{
-"symbol": "FFIV",
-"weight": 0.0003
-},
-{
-"symbol": "BALL",
-"weight": 0.0003
-},
-{
-"symbol": "STZ",
-"weight": 0.0003
-},
-{
-"symbol": "SWKS",
-"weight": 0.0003
-},
-{
-"symbol": "CMS",
-"weight": 0.0003
-},
-{
-"symbol": "EFX",
-"weight": 0.0003
-},
-{
-"symbol": "RVTY",
-"weight": 0.0003
-},
-{
-"symbol": "ESS",
-"weight": 0.0003
-},
-{
-"symbol": "FOXA",
-"weight": 0.0003
-},
-{
-"symbol": "FTV",
-"weight": 0.0003
-},
-{
-"symbol": "FSLR",
-"weight": 0.0003
-},
-{
-"symbol": "SBAC",
-"weight": 0.0003
-},
-{
-"symbol": "PTC",
-"weight": 0.0003
-},
-{
-"symbol": "DD",
-"weight": 0.0003
-},
-{
-"symbol": "EVRG",
-"weight": 0.0003
-},
-{
-"symbol": "EXE",
-"weight": 0.0003
-},
-{
-"symbol": "IEX",
-"weight": 0.0003
-},
-{
-"symbol": "LDOS",
-"weight": 0.0003
-},
-{
 "symbol": "J",
-"weight": 0.0003
-},
-{
-"symbol": "MAS",
-"weight": 0.0003
-},
-{
-"symbol": "GIS",
-"weight": 0.0003
-},
-{
-"symbol": "HAS",
-"weight": 0.0003
-},
-{
-"symbol": "KEY",
 "weight": 0.0003
 },
 {
@@ -2201,23 +2033,91 @@
 "weight": 0.0003
 },
 {
-"symbol": "KIM",
+"symbol": "APA",
 "weight": 0.0003
 },
 {
-"symbol": "GPN",
+"symbol": "WRB",
 "weight": 0.0003
 },
 {
-"symbol": "NDSN",
+"symbol": "TSN",
 "weight": 0.0003
 },
 {
-"symbol": "PKG",
+"symbol": "ZBH",
 "weight": 0.0003
 },
 {
-"symbol": "NRG",
+"symbol": "KHC",
+"weight": 0.0003
+},
+{
+"symbol": "BR",
+"weight": 0.0003
+},
+{
+"symbol": "BRO",
+"weight": 0.0003
+},
+{
+"symbol": "CDW",
+"weight": 0.0003
+},
+{
+"symbol": "AIZ",
+"weight": 0.0003
+},
+{
+"symbol": "TPL",
+"weight": 0.0003
+},
+{
+"symbol": "TYL",
+"weight": 0.0003
+},
+{
+"symbol": "TSCO",
+"weight": 0.0003
+},
+{
+"symbol": "BALL",
+"weight": 0.0003
+},
+{
+"symbol": "BBY",
+"weight": 0.0003
+},
+{
+"symbol": "CF",
+"weight": 0.0003
+},
+{
+"symbol": "STZ",
+"weight": 0.0003
+},
+{
+"symbol": "CMS",
+"weight": 0.0003
+},
+{
+"symbol": "SBAC",
+"weight": 0.0003
+},
+{
+"symbol": "RVTY",
+"weight": 0.0003
+},
+{
+"symbol": "SNA",
+"weight": 0.0003
+},
+{
+"symbol": "DD",
+"weight": 0.0003
+},
+{
+"symbol": "EFX",
 "weight": 0.0003
 },
 {
@@ -2225,7 +2125,83 @@
 "weight": 0.0003
 },
 {
-"symbol": "HST",
+"symbol": "SW",
+"weight": 0.0003
+},
+{
+"symbol": "SWK",
+"weight": 0.0003
+},
+{
+"symbol": "SWKS",
+"weight": 0.0003
+},
+{
+"symbol": "EVRG",
+"weight": 0.0003
+},
+{
+"symbol": "FSLR",
+"weight": 0.0003
+},
+{
+"symbol": "FFIV",
+"weight": 0.0003
+},
+{
+"symbol": "FTV",
+"weight": 0.0003
+},
+{
+"symbol": "FOXA",
+"weight": 0.0003
+},
+{
+"symbol": "KEY",
+"weight": 0.0003
+},
+{
+"symbol": "GIS",
+"weight": 0.0003
+},
+{
+"symbol": "GEN",
+"weight": 0.0003
+},
+{
+"symbol": "MAS",
+"weight": 0.0003
+},
+{
+"symbol": "HAS",
+"weight": 0.0003
+},
+{
+"symbol": "NI",
+"weight": 0.0003
+},
+{
+"symbol": "LYB",
+"weight": 0.0003
+},
+{
+"symbol": "LNT",
+"weight": 0.0003
+},
+{
+"symbol": "ALLE",
+"weight": 0.0003
+},
+{
+"symbol": "LDOS",
+"weight": 0.0003
+},
+{
+"symbol": "LEN",
+"weight": 0.0003
+},
+{
+"symbol": "KIM",
 "weight": 0.0003
 },
 {
@@ -2233,35 +2209,43 @@
 "weight": 0.0003
 },
 {
-"symbol": "ALLE",
-"weight": 0.0002
+"symbol": "IFF",
+"weight": 0.0003
 },
 {
-"symbol": "LVS",
-"weight": 0.0002
+"symbol": "INCY",
+"weight": 0.0003
 },
 {
-"symbol": "LULU",
-"weight": 0.0002
+"symbol": "IEX",
+"weight": 0.0003
 },
 {
-"symbol": "JKHY",
-"weight": 0.0002
+"symbol": "ESS",
+"weight": 0.0003
 },
 {
-"symbol": "SJM",
-"weight": 0.0002
+"symbol": "EXE",
+"weight": 0.0003
 },
 {
-"symbol": "LII",
-"weight": 0.0002
+"symbol": "GPC",
+"weight": 0.0003
 },
 {
-"symbol": "ALGN",
-"weight": 0.0002
+"symbol": "HST",
+"weight": 0.0003
+},
+{
+"symbol": "GPN",
+"weight": 0.0003
 },
 {
 "symbol": "IVZ",
+"weight": 0.0002
+},
+{
+"symbol": "HII",
 "weight": 0.0002
 },
 {
@@ -2269,11 +2253,7 @@
 "weight": 0.0002
 },
 {
-"symbol": "APA",
-"weight": 0.0002
-},
-{
-"symbol": "WY",
+"symbol": "ALB",
 "weight": 0.0002
 },
 {
@@ -2281,39 +2261,31 @@
 "weight": 0.0002
 },
 {
-"symbol": "PODD",
+"symbol": "ALGN",
 "weight": 0.0002
 },
 {
-"symbol": "DOC",
+"symbol": "JKHY",
 "weight": 0.0002
 },
 {
-"symbol": "PNR",
+"symbol": "LII",
 "weight": 0.0002
 },
 {
-"symbol": "BG",
+"symbol": "LULU",
 "weight": 0.0002
 },
 {
-"symbol": "ALB",
+"symbol": "BEN",
 "weight": 0.0002
 },
 {
-"symbol": "TKO",
+"symbol": "NVR",
 "weight": 0.0002
 },
 {
-"symbol": "TRMB",
-"weight": 0.0002
-},
-{
-"symbol": "TXT",
-"weight": 0.0002
-},
-{
-"symbol": "BXP",
+"symbol": "TECH",
 "weight": 0.0002
 },
 {
@@ -2321,7 +2293,55 @@
 "weight": 0.0002
 },
 {
-"symbol": "CHRW",
+"symbol": "AVY",
+"weight": 0.0002
+},
+{
+"symbol": "SOLV",
+"weight": 0.0002
+},
+{
+"symbol": "REG",
+"weight": 0.0002
+},
+{
+"symbol": "RL",
+"weight": 0.0002
+},
+{
+"symbol": "RDDT",
+"weight": 0.0002
+},
+{
+"symbol": "SMCI",
+"weight": 0.0002
+},
+{
+"symbol": "CSGP",
+"weight": 0.0002
+},
+{
+"symbol": "DECK",
+"weight": 0.0002
+},
+{
+"symbol": "FDS",
+"weight": 0.0002
+},
+{
+"symbol": "FICO",
+"weight": 0.0002
+},
+{
+"symbol": "FIS",
+"weight": 0.0002
+},
+{
+"symbol": "FDXF",
+"weight": 0.0002
+},
+{
+"symbol": "EG",
 "weight": 0.0002
 },
 {
@@ -2329,7 +2349,15 @@
 "weight": 0.0002
 },
 {
-"symbol": "HII",
+"symbol": "GL",
+"weight": 0.0002
+},
+{
+"symbol": "NWSA",
+"weight": 0.0002
+},
+{
+"symbol": "DOC",
 "weight": 0.0002
 },
 {
@@ -2345,11 +2373,23 @@
 "weight": 0.0002
 },
 {
-"symbol": "GL",
+"symbol": "GNRC",
 "weight": 0.0002
 },
 {
-"symbol": "NVR",
+"symbol": "WY",
+"weight": 0.0002
+},
+{
+"symbol": "SJM",
+"weight": 0.0002
+},
+{
+"symbol": "LVS",
+"weight": 0.0002
+},
+{
+"symbol": "PODD",
 "weight": 0.0002
 },
 {
@@ -2357,51 +2397,7 @@
 "weight": 0.0002
 },
 {
-"symbol": "LYB",
-"weight": 0.0002
-},
-{
-"symbol": "GNRC",
-"weight": 0.0002
-},
-{
-"symbol": "FDS",
-"weight": 0.0002
-},
-{
-"symbol": "EG",
-"weight": 0.0002
-},
-{
 "symbol": "DPZ",
-"weight": 0.0002
-},
-{
-"symbol": "FDXF",
-"weight": 0.0002
-},
-{
-"symbol": "ROL",
-"weight": 0.0002
-},
-{
-"symbol": "DECK",
-"weight": 0.0002
-},
-{
-"symbol": "RDDT",
-"weight": 0.0002
-},
-{
-"symbol": "RL",
-"weight": 0.0002
-},
-{
-"symbol": "FICO",
-"weight": 0.0002
-},
-{
-"symbol": "FIS",
 "weight": 0.0002
 },
 {
@@ -2409,15 +2405,11 @@
 "weight": 0.0002
 },
 {
-"symbol": "BEN",
+"symbol": "CLX",
 "weight": 0.0002
 },
 {
-"symbol": "REG",
-"weight": 0.0002
-},
-{
-"symbol": "CSGP",
+"symbol": "ROL",
 "weight": 0.0002
 },
 {
@@ -2429,43 +2421,7 @@
 "weight": 0.0002
 },
 {
-"symbol": "TYL",
-"weight": 0.0002
-},
-{
-"symbol": "UDR",
-"weight": 0.0002
-},
-{
-"symbol": "AES",
-"weight": 0.0002
-},
-{
-"symbol": "COO",
-"weight": 0.0002
-},
-{
-"symbol": "CPT",
-"weight": 0.0002
-},
-{
-"symbol": "TECH",
-"weight": 0.0002
-},
-{
-"symbol": "SOLV",
-"weight": 0.0002
-},
-{
-"symbol": "CLX",
-"weight": 0.0002
-},
-{
-"symbol": "AIZ",
-"weight": 0.0002
-},
-{
-"symbol": "AVY",
+"symbol": "TKO",
 "weight": 0.0002
 },
 {
@@ -2473,19 +2429,75 @@
 "weight": 0.0002
 },
 {
+"symbol": "COO",
+"weight": 0.0002
+},
+{
+"symbol": "TXT",
+"weight": 0.0002
+},
+{
+"symbol": "AES",
+"weight": 0.0002
+},
+{
+"symbol": "TRMB",
+"weight": 0.0002
+},
+{
+"symbol": "UDR",
+"weight": 0.0002
+},
+{
+"symbol": "BXP",
+"weight": 0.0002
+},
+{
+"symbol": "PNR",
+"weight": 0.0002
+},
+{
+"symbol": "CHRW",
+"weight": 0.0002
+},
+{
 "symbol": "CHTR",
 "weight": 0.0002
 },
 {
-"symbol": "APTV",
-"weight": 0.0001
+"symbol": "CPT",
+"weight": 0.0002
+},
+{
+"symbol": "BG",
+"weight": 0.0002
 },
 {
 "symbol": "ARE",
 "weight": 0.0001
 },
 {
+"symbol": "FOX",
+"weight": 0.0001
+},
+{
+"symbol": "FRT",
+"weight": 0.0001
+},
+{
 "symbol": "NCLH",
+"weight": 0.0001
+},
+{
+"symbol": "ERIE",
+"weight": 0.0001
+},
+{
+"symbol": "HSIC",
+"weight": 0.0001
+},
+{
+"symbol": "HRL",
 "weight": 0.0001
 },
 {
@@ -2497,23 +2509,7 @@
 "weight": 0.0001
 },
 {
-"symbol": "NWSA",
-"weight": 0.0001
-},
-{
-"symbol": "HRL",
-"weight": 0.0001
-},
-{
-"symbol": "HSIC",
-"weight": 0.0001
-},
-{
-"symbol": "FRT",
-"weight": 0.0001
-},
-{
-"symbol": "FOX",
+"symbol": "APTV",
 "weight": 0.0001
 },
 {
@@ -2521,15 +2517,11 @@
 "weight": 0.0001
 },
 {
-"symbol": "SKYD",
-"weight": 0.0001
-},
-{
 "symbol": "DVA",
 "weight": 0.0001
 },
 {
-"symbol": "ERIE",
+"symbol": "SKYD",
 "weight": 0.0001
 },
 {
@@ -2548,9 +2540,8 @@
 }
 },
 "earnings": {
-"asof": "2026-11-20",
+"asof": "2026-11-24",
 "dates": {
-"A": "2026-11-23",
 "ACN": "2026-12-17",
 "ADBE": "2026-12-09",
 "ADI": "2026-11-24",
@@ -2578,13 +2569,11 @@
 "DELL": "2026-11-24",
 "DG": "2026-12-03",
 "DLTR": "2026-11-24",
-"DRI": "2026-12-17",
+"DRI": "2026-12-18",
 "FDS": "2026-12-17",
-"GIS": "2026-12-16",
-"HPE": "2026-11-23",
+"GIS": "2026-12-17",
 "HPQ": "2026-11-24",
 "HRL": "2026-12-03",
-"J": "2026-11-23",
 "JBL": "2026-12-16",
 "JPM": "2027-01-12",
 "KEY": "2027-01-20",
@@ -2593,19 +2582,22 @@
 "LULU": "2026-12-10",
 "MDT": "2026-11-24",
 "MRVL": "2026-12-01",
-"MTB": "2027-01-19",
+"MTB": "2027-01-15",
 "MU": "2026-12-16",
 "NDSN": "2026-12-15",
 "NKE": "2026-12-17",
 "NTAP": "2026-12-01",
 "OKTA": "2026-12-01",
-"ORCL": "2026-12-09",
+"ORCL": "2026-12-14",
 "OTIS": "2027-01-27",
 "OXY": "2027-02-17",
 "PAYX": "2026-12-18",
 "PFE": "2027-02-02",
+"PNC": "2027-01-15",
+"RF": "2027-01-15",
 "SJM": "2026-11-24",
 "SNPS": "2026-12-08",
+"STT": "2027-01-15",
 "STZ": "2027-01-06",
 "TFC": "2027-01-20",
 "TTWO": "2027-02-09",
@@ -2632,26 +2624,26 @@
 "capex": 648000000.0,
 "capex_yoy": 1.5116279069767442,
 "fcf_margin": 0.04141436794498019,
-"fwd_pe": 30.188778,
-"eps_rev30": 0.11293847887565667,
-"fetched": "2026-11-16"
+"fwd_pe": 25.708899,
+"eps_rev30": 0.11098329401065454,
+"fetched": "2026-11-24"
 },
 "NVDA": {
-"quarter": "2026-07-31",
-"rev_yoy": 1.0585114348672526,
-"rev_qoq": 0.17896220057587464,
-"gross_margin": 0.7497531723844068,
-"gm_chg_yoy": 0.025516388266998757,
-"gm_chg_qoq": 0.0004178786271317181,
-"op_margin": 0.6623710000935347,
-"dio": 119.32908343369742,
-"dio_chg": 4.58047653175197,
+"quarter": "2026-10-31",
+"rev_yoy": null,
+"rev_qoq": null,
+"gross_margin": null,
+"gm_chg_yoy": null,
+"gm_chg_qoq": null,
+"op_margin": null,
+"dio": null,
+"dio_chg": null,
 "capex": 2677000000.0,
 "capex_yoy": 0.41266490765171504,
-"fcf_margin": 0.22240467257667246,
-"fwd_pe": 10.28222,
-"eps_rev30": -0.004750355019918828,
-"fetched": "2026-11-16"
+"fcf_margin": null,
+"fwd_pe": 9.93961,
+"eps_rev30": 0.043399142925364176,
+"fetched": "2026-11-24"
 },
 "AVGO": {
 "quarter": "2026-07-31",
@@ -2666,9 +2658,9 @@
 "capex": 532000000.0,
 "capex_yoy": 2.7464788732394365,
 "fcf_margin": 0.46179581629549527,
-"fwd_pe": 17.827318,
-"eps_rev30": 0.0010426001685071018,
-"fetched": "2026-11-16"
+"fwd_pe": 16.174044,
+"eps_rev30": -0.0036668320992885306,
+"fetched": "2026-11-24"
 },
 "MU": {
 "quarter": "2026-08-31",
@@ -2683,9 +2675,9 @@
 "capex": 11110000000.0,
 "capex_yoy": 0.9635913750441851,
 "fcf_margin": 0.6060041675118479,
-"fwd_pe": 3.7461889,
-"eps_rev30": 0.006921112691785858,
-"fetched": "2026-11-16"
+"fwd_pe": 3.4246724,
+"eps_rev30": -0.001190514109629448,
+"fetched": "2026-11-24"
 },
 "INTC": {
 "quarter": "2026-09-30",
@@ -2702,7 +2694,7 @@
 "fcf_margin": 0.06407073215042694,
 "fwd_pe": 33.321045,
 "eps_rev30": -0.15549119861139937,
-"fetched": "2026-11-16"
+"fetched": "2026-11-24"
 },
 "TXN": {
 "quarter": "2026-09-30",
@@ -2717,9 +2709,9 @@
 "capex": 463000000.0,
 "capex_yoy": -0.6131996658312449,
 "fcf_margin": 0.48819157720891826,
-"fwd_pe": 26.099201,
-"eps_rev30": 0.14275196908285803,
-"fetched": "2026-11-16"
+"fwd_pe": 24.759138,
+"eps_rev30": 0.0030246803531650546,
+"fetched": "2026-11-24"
 },
 "ADI": {
 "quarter": "2026-07-31",
@@ -2734,9 +2726,9 @@
 "capex": 145662000.0,
 "capex_yoy": 0.8402587394034338,
 "fcf_margin": 0.3625891649690855,
-"fwd_pe": 24.090967,
-"eps_rev30": 0.011182742253981415,
-"fetched": "2026-11-16"
+"fwd_pe": 22.99552,
+"eps_rev30": 0.002138669765659129,
+"fetched": "2026-11-24"
 },
 "QCOM": {
 "quarter": "2026-09-30",
@@ -2751,9 +2743,9 @@
 "capex": 916000000.0,
 "capex_yoy": 1.2506142506142508,
 "fcf_margin": 0.1767099399341213,
-"fwd_pe": 14.129126,
-"eps_rev30": -0.0559615786176656,
-"fetched": "2026-11-16"
+"fwd_pe": 13.576102,
+"eps_rev30": -0.06280485365485877,
+"fetched": "2026-11-24"
 },
 "NXPI": {
 "quarter": "2026-09-30",
@@ -2768,9 +2760,9 @@
 "capex": 87000000.0,
 "capex_yoy": -0.13,
 "fcf_margin": 0.3087691494981511,
-"fwd_pe": 14.44796,
-"eps_rev30": 0.011745853715292576,
-"fetched": "2026-11-16"
+"fwd_pe": 13.96003,
+"eps_rev30": 0.0021496234060875974,
+"fetched": "2026-11-24"
 },
 "KLAC": {
 "quarter": "2026-09-30",
@@ -2802,9 +2794,9 @@
 "capex": 69337000.0,
 "capex_yoy": 0.6308832176878749,
 "fcf_margin": 0.18344673068814354,
-"fwd_pe": 29.808987,
+"fwd_pe": 28.594366,
 "eps_rev30": 0.3337489592673242,
-"fetched": "2026-11-16"
+"fetched": "2026-11-24"
 },
 "AMAT": {
 "quarter": "2026-10-31",
