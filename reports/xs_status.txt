@@ -1,4 +1,4 @@
 🔬 교차종목 예측 (미검증 · 연구용 · 매매 신호 아님) 기준 2026-11-25
 상대 강세 예상 상위5: TER, MU, MRVL, AMD, LRCX
-상대 약세 예상 하위5: CRM, NFLX, TSLA, AAPL, ADBE
+상대 약세 예상 하위5: QCOM, CRM, MSFT, ADBE, AAPL
 등록 후 1거래일: RankIC 평균 -6.1 · 방향 적중 37.9% (60거래일 전 판정 안 함)
